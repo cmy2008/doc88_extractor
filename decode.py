@@ -73,6 +73,7 @@ class Viewer:
         result = self._9O(result)
         return result
  
+    @staticmethod
     def _dT(string):
         result = []
         for c in string:
@@ -104,11 +105,11 @@ class Viewer:
         inBuffer = [0, 0, 0]
         done = False
         while not done:
-            inBuffer[0] = Viewer._2B()
+            inBuffer[0] = self._2B()
             if inBuffer[0] == self._kh_OF_INPUT:
                 break
-            inBuffer[1] = Viewer._2B()
-            inBuffer[2] = Viewer._2B()
+            inBuffer[1] = self._2B()
+            inBuffer[2] = self._2B()
             
             result.append(Viewer._Jv[inBuffer[0] >> 2])
             if inBuffer[1] != self._kh_OF_INPUT:
@@ -158,7 +159,6 @@ def get_url(p_code,headerInfo,page,p_swf,pageInfo,ebt_host):
     _ca = 1
     _Ev = _hj[3]
     _jo = _hj[4]
-    # print(f"{_ca}-0-{_XC}-{Viewer._n5}")
     _GJ = Viewer._GZ + "/getebt-" + encode2(f"{_ca}-0-{_XC}-{Viewer._n5}") + ".ebt"
     _IP = Viewer._gH(_xF) + "/getebt-" + encode2(f"{_ca}-{_Ev}-{_jo}-{Viewer._n5}-{_xF}-{Viewer._7I}") + ".ebt"
     return _GJ,_IP
