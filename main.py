@@ -3,7 +3,7 @@ print("by: Cuite_Piglin")
 import os
 import platform
 if platform.system() == "Windows":
-    print("警告：你正在使用Windows系统使用此工具，虽然我们有意使其在多平台下运行，但需要安装Cairo库才能使其工作，建议你安装GTK（需要200MB左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n安装后仍然无效，请尝试将安装目录下的bin目录添加到系统环境的PATH中然后重启终端或vscode")
+    print("警告：你正在使用Windows系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用Cairo库菜鸟进行pdf的转换，建议你安装GTK运行库（需要200MB左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n安装后仍然无效，请尝试将安装目录下的bin目录添加到系统环境的PATH中然后重启终端或vscode")
     # os.add_dll_directory()
     list=os.environ['Path'].split(';')
     # print("Warnning: You're using Windows, please follow the README.md to install Cairo.")
@@ -56,7 +56,8 @@ def append_pdf(pdf,file):
 
 if not os.path.exists("ffdec/ffdec-cli.jar"):
     print("Ffdec not found! Now start downloading ffdec...")
-    print("Warnning: use built download method is very slow, if you want, please put the ffdec files that from local(extracted ZIP format, not from installer, make sure that have 'ffdec-cli.jar') to diretory 'ffdec'.")
+    print("Warnning: use built download method is really really really slow, if you want, please put the ffdec files that from local(extracted ZIP format, not from installer, make sure that have 'ffdec-cli.jar') to diretory 'ffdec'.")
+    print("Download link: https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip")
     try:
         os.makedirs("ffdec")
     except:

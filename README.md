@@ -1,7 +1,7 @@
 # WHAT IS THIS
 ### A tool make you download doc88 documents.
-### NOT JUST IMAGE, REAL SHAPES
-### but cat't copy the texts:(
+### NOT JUST IMAGE, IT HAS REAL SHAPES
+### but can't copy the texts:(
 
 # INSTALL
 ## Linux
