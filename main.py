@@ -17,6 +17,7 @@ if platform.system() == "Windows":
             print("Error when setting environment.")
     else:
         print("Not found GTK runtime, maybe not install?")
+import sys
 import json
 import requests
 import compressor
@@ -28,7 +29,29 @@ from pypdf import PdfWriter
 from decode import decode
 from decode import get_url
 
-ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip"
+def check_ffdec():
+    ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip"
+    if not os.path.exists("ffdec/ffdec.jar"):
+        print("Ffdec not found! Now start downloading ffdec...")
+        print("Warnning: use built download method is really really really slow, if you want, please put the ffdec files that from local(extracted ZIP format, make sure that have 'ffdecjar') to diretory 'ffdec'.")
+        print("Download link: https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip")
+        try:
+            os.makedirs("ffdec")
+        except:
+            print("Cannot create directory! Please delete it and retry.")
+            exit()
+        try:
+            download(ffdec_url,"ffdec/ffdec.zip")
+        except:
+            print("Download error! Plase check the Intenet connection or modify the 'ffdec_url'. If still not work, extract the ffdec files to diretory ffdec.")
+        print("Download done! Start extra zip...")
+        extractzip("ffdec/ffdec.zip","ffdec/")
+
+    if os.system("java --version") != 0:
+        print("Java not found! Plase install java and add java to the path.")
+        exit()
+def r(str):
+    return "\"" + str + "\""
 # m_main.init
 def get_str(url):
     proxies = { "http": None, "https": None}
@@ -54,80 +77,89 @@ def append_pdf(pdf,file):
         pdf.append(f)
     return pdf
 
-if not os.path.exists("ffdec/ffdec-cli.jar"):
-    print("Ffdec not found! Now start downloading ffdec...")
-    print("Warnning: use built download method is really really really slow, if you want, please put the ffdec files that from local(extracted ZIP format, not from installer, make sure that have 'ffdec-cli.jar') to diretory 'ffdec'.")
-    print("Download link: https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip")
-    try:
-        os.makedirs("ffdec")
-    except:
-        print("Cannot create directory! Please delete it and retry.")
-        exit()
-    try:
-        download(ffdec_url,"ffdec/ffdec.zip")
-    except:
-        print("Download error! Plase check the Intenet connection or modify the 'ffdec_url'. If still not work, extract the ffdec files to diretory ffdec.")
-    print("Download done! Start extra zip...")
-    extractzip("ffdec/ffdec.zip","ffdec/")
-
-if os.system("java --version") != 0:
-    print("Java not found! Plase install java and add java to the path.")
-    exit()
-
-encoded_str = get_str(input('请输入网址：'))
-try:
-    config = json.loads(decode(encoded_str))
-except:
-    print("Can't read! Maybe keys were changed?")
-    exit()
-# print(decode(encoded_str))
-# print(decode(config['pageInfo']))
-page=1
-url=get_url(config['p_code'],config['headerInfo'],page,config['p_swf'],config['pageInfo'],config['ebt_host'])
-print("文档名：" + config['p_name'])
-print("上传日期：" + config['p_upload_date'])
-
-dir_path = 'docs/' + config['p_name'] + '/'
-swf_path=dir_path + 'swf/'
-dir_format = "\""  + dir_path[:-1] + "\"" + '/'
-swf_format = "\""  + dir_path[:-1] + "\"" + '/swf/'
-file_path = dir_path + url[0][25:]
-try:
-    os.makedirs(dir_path)
-except FileExistsError:
-    print("The directory already exists!")
-    user_input = input("Continue? (Y/n): ")
-    if user_input == "Y" or user_input == "y":
-        print("Continuing...")
-    else:
-        exit()
-try:
-    os.makedirs(swf_path)
-except:
-    print("")
-print("Downloading PK...")
-download(url[0],file_path)
-for i in range(1,config['pageCount']+1):
-    print("Downloading page " + str(i) + '...')
-    url=get_url(config['p_code'],config['headerInfo'],i,config['p_swf'],config['pageInfo'],config['ebt_host'])
-    file_path = dir_path  + url[1][25:]
-    print(url[1])
-    download(url[1],file_path)
-    compressor.make(dir_path + url[0][25:],dir_path + url[1][25:],swf_path + str(i) + '.swf')
-print("Donload done. (total page: " + str(config['pageCount']) + ")")
-
-
-print("Now start converting...")
-pdf=PdfWriter()
-for i in range(1,config['pageCount']+1):
-    print("Converting page " + str(i) + " to svg...")
+def init(name):
+    global dir_path
+    dir_path = 'docs/' + name + '/'
+    global swf_path
+    swf_path=dir_path + 'swf/'
+    global pdf_path
     pdf_path = dir_path + 'pdf/'
-    os.system("java -jar ffdec/ffdec-cli.jar -format frame:svg -select 1 -export frame " + dir_format + 'pdf ' + swf_format + str(i) + '.swf')
-    print("Converting svg to pdf...")
-    cairosvg.svg2pdf(url=pdf_path + '1.svg',write_to=pdf_path + str(i) + '.pdf')
-    pdf = append_pdf(pdf,pdf_path + str(i) + ".pdf")
-print("cleaning cache...")
-shutil.rmtree(swf_path)
-shutil.rmtree(pdf_path)
-pdf.write(dir_path[:-1] + ".pdf")
-print("Saved file to " + dir_path[:-1] + ".pdf")
+    global svg_path
+    svg_path = dir_path + 'svg/'
+    try:
+        os.makedirs(swf_path)
+        os.makedirs(svg_path)
+        os.makedirs(pdf_path)
+    except:
+        print("")
+    # global dir_format
+    # dir_format = "\""  + dir_path[:-1] + "\"" + '/'
+    # global swf_format
+    # swf_format = "\""  + dir_path[:-1] + "\"" + '/swf/'
+
+def main():
+    encoded_str = get_str(input('请输入网址：'))
+    try:
+        config = json.loads(decode(encoded_str))
+    except:
+        print("Can't read! Maybe keys were changed?")
+        exit()
+    # print(decode(encoded_str))
+    # print(decode(config['pageInfo']))
+    print("文档名：" + config['p_name'])
+    print("上传日期：" + config['p_upload_date'])
+    init(config['p_name'])
+    get_swf(config)
+    convert(config['pageCount'])
+
+def get_swf(config):
+    url=get_url(config['p_code'],config['headerInfo'],1,config['p_swf'],config['pageInfo'],config['ebt_host'])
+    file_path=dir_path + url[0][25:]
+    try:
+        os.makedirs(dir_path)
+    except FileExistsError:
+        print("The directory already exists!")
+        user_input = input("Continue? (Y/n): ")
+        if user_input == "Y" or user_input == "y":
+            print("Continuing...")
+        else:
+            exit()
+    print("Downloading PK...")
+    download(url[0],file_path)
+    for i in range(1,config['pageCount']+1):
+        print("Downloading page " + str(i) + '...')
+        url=get_url(config['p_code'],config['headerInfo'],i,config['p_swf'],config['pageInfo'],config['ebt_host'])
+        file_path = dir_path  + url[1][25:]
+        print(url[1])
+        download(url[1],file_path)
+        compressor.make(dir_path + url[0][25:],dir_path + url[1][25:],swf_path + str(i) + '.swf')
+    print("Donload done. (total page: " + str(config['pageCount']) + ")")
+
+def convert(pageCount):
+    print("Now start converting...")
+    pdf=PdfWriter()
+    def execute(num):
+        os.system("java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame " + r(svg_path) + " " + r(swf_path + str(num) + '.swf'))
+        shutil.move(svg_path + '1.svg',svg_path + str(i) + '_.svg')
+    for i in range(1,pageCount+1):
+        print("Converting page " + str(i) + " to svg...")
+        try:
+            execute(i)
+        except FileNotFoundError:
+            os.system("java -jar ffdec/ffdec.jar -header -set frameCount 1 " + r(swf_path + str(i) + '.swf') + " " + r(swf_path + str(i) + '.swf'))
+            execute(i)
+        print("Converting svg to pdf...")
+        cairosvg.svg2pdf(url=svg_path + str(i) + '_.svg',write_to=pdf_path + str(i) + '.pdf')
+        pdf = append_pdf(pdf,pdf_path + str(i) + ".pdf")
+    print("cleaning cache...")
+    shutil.rmtree(swf_path)
+    shutil.rmtree(pdf_path)
+    shutil.rmtree(svg_path)
+    pdf.write(dir_path[:-1] + ".pdf")
+    print("Saved file to " + dir_path[:-1] + ".pdf")
+
+if __name__ == "__main__":
+    check_ffdec()
+    a=sys.argv
+    if len(a) == 1:
+        main()
