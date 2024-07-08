@@ -9,12 +9,12 @@ but can't copy the texts:(
 ## Linux
 Just run:
 ```
-pip install coarosvg pypdf
+pip install cairosvg pypdf
 ```
 ## Windows
 First install [GTK Runtime](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases), then run:
 ```
-pip install coarosvg pypdf
+pip install cairosvg pypdf
 ```
 
 # USAGE
