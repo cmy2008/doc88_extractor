@@ -87,6 +87,15 @@ def init(name):
     global svg_path
     svg_path = dir_path + 'svg/'
     try:
+        os.makedirs(dir_path)
+    except FileExistsError:
+        print("The directory already exists!")
+        user_input = input("Continue? (Y/n): ")
+        if user_input == "Y" or user_input == "y":
+            print("Continuing...")
+        else:
+            exit()
+    try:
         os.makedirs(swf_path)
         os.makedirs(svg_path)
         os.makedirs(pdf_path)
@@ -115,15 +124,6 @@ def main():
 def get_swf(config):
     url=get_url(config['p_code'],config['headerInfo'],1,config['p_swf'],config['pageInfo'],config['ebt_host'])
     file_path=dir_path + url[0][25:]
-    try:
-        os.makedirs(dir_path)
-    except FileExistsError:
-        print("The directory already exists!")
-        user_input = input("Continue? (Y/n): ")
-        if user_input == "Y" or user_input == "y":
-            print("Continuing...")
-        else:
-            exit()
     print("Downloading PK...")
     download(url[0],file_path)
     for i in range(1,config['pageCount']+1):
@@ -151,15 +151,18 @@ def convert(pageCount):
         print("Converting svg to pdf...")
         cairosvg.svg2pdf(url=svg_path + str(i) + '_.svg',write_to=pdf_path + str(i) + '.pdf')
         pdf = append_pdf(pdf,pdf_path + str(i) + ".pdf")
+    pdf.write(dir_path[:-1] + ".pdf")
+    print("Saved file to " + dir_path[:-1] + ".pdf")
+
+def clean():
     print("cleaning cache...")
     shutil.rmtree(swf_path)
     shutil.rmtree(pdf_path)
     shutil.rmtree(svg_path)
-    pdf.write(dir_path[:-1] + ".pdf")
-    print("Saved file to " + dir_path[:-1] + ".pdf")
 
 if __name__ == "__main__":
     check_ffdec()
     a=sys.argv
     if len(a) == 1:
         main()
+        clean()
