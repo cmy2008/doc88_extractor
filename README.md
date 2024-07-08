@@ -12,7 +12,6 @@ Just run:
 pip install coarosvg pypdf
 ```
 ## Windows
-### Install GTK
 First install [GTK Runtime](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases), then run:
 ```
 pip install coarosvg pypdf
