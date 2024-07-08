@@ -3,7 +3,7 @@ print("by: Cuite_Piglin")
 import os
 import platform
 if platform.system() == "Windows":
-    print("警告：你正在使用Windows系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用Cairo库才能进行pdf的转换，建议你安装GTK运行库（需要200MB左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n安装后仍然无效，请尝试将安装目录下的bin目录添加到系统环境的PATH中然后重启终端或vscode")
+    print("警告：你正在使用Windows系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用Cairo库才能进行pdf的转换，建议你安装GTK运行库（需要200MB左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的bin目录添加到系统环境的PATH中然后重启终端或vscode")
     # os.add_dll_directory()
     list=os.environ['Path'].split(';')
     # print("Warnning: You're using Windows, please follow the README.md to install Cairo.")
