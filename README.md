@@ -1,7 +1,9 @@
 # WHAT IS THIS
-### A tool make you download doc88 documents.
-### NOT JUST IMAGE, IT HAS REAL SHAPES
-### but can't copy the texts:(
+## Introduce
+A tool make you download doc88 documents.
+## Features
+NOT JUST IMAGE, IT HAS REAL SHAPES
+but can't copy the texts:(
 
 # INSTALL
 ## Linux
@@ -16,7 +18,7 @@ First install [GTK Runtime](https://github.com/tschoonj/GTK-for-Windows-Runtime-
 pip install coarosvg pypdf
 ```
 
-# USE
+# USAGE
 ```
 python main.py
 ```

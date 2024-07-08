@@ -3,7 +3,7 @@ print("by: Cuite_Piglin")
 import os
 import platform
 if platform.system() == "Windows":
-    print("警告：你正在使用Windows系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用Cairo库菜鸟进行pdf的转换，建议你安装GTK运行库（需要200MB左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n安装后仍然无效，请尝试将安装目录下的bin目录添加到系统环境的PATH中然后重启终端或vscode")
+    print("警告：你正在使用Windows系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用Cairo库才能进行pdf的转换，建议你安装GTK运行库（需要200MB左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n安装后仍然无效，请尝试将安装目录下的bin目录添加到系统环境的PATH中然后重启终端或vscode")
     # os.add_dll_directory()
     list=os.environ['Path'].split(';')
     # print("Warnning: You're using Windows, please follow the README.md to install Cairo.")
@@ -14,9 +14,9 @@ if platform.system() == "Windows":
         try:
             os.add_dll_directory(matches[0])
         except:
-            print("Error when setting envirment.")
+            print("Error when setting environment.")
     else:
-        print("Not found GTK, maybe not install?")
+        print("Not found GTK runtime, maybe not install?")
 import json
 import requests
 import compressor
@@ -66,19 +66,19 @@ if not os.path.exists("ffdec/ffdec-cli.jar"):
     try:
         download(ffdec_url,"ffdec/ffdec.zip")
     except:
-        print("Download error! Plase check the Intenet connection or change the 'ffdec_url'. If still not work, put the ffdec files to diretory ffdec.")
+        print("Download error! Plase check the Intenet connection or modify the 'ffdec_url'. If still not work, extract the ffdec files to diretory ffdec.")
     print("Download done! Start extra zip...")
     extractzip("ffdec/ffdec.zip","ffdec/")
 
 if os.system("java --version") != 0:
-    print("Java not found! Plase add java to the path.")
+    print("Java not found! Plase install java and add java to the path.")
     exit()
 
 encoded_str = get_str(input('请输入网址：'))
 try:
     config = json.loads(decode(encoded_str))
 except:
-    print("Can't read! Maybe changed keys?")
+    print("Can't read! Maybe keys were changed?")
     exit()
 # print(decode(encoded_str))
 # print(decode(config['pageInfo']))

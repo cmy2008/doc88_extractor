@@ -1,4 +1,6 @@
 *.pyc
+*.swp
+*.swo
 __pycache__/
 docs/
 ffdec/
