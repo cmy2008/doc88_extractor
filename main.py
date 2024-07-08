@@ -77,9 +77,9 @@ def append_pdf(pdf,file):
         pdf.append(f)
     return pdf
 
-def init(name):
+def init(config):
     global dir_path
-    dir_path = 'docs/' + name + '/'
+    dir_path = 'docs/' + config['p_name'] + '/'
     global swf_path
     swf_path=dir_path + 'swf/'
     global pdf_path
@@ -95,6 +95,8 @@ def init(name):
             print("Continuing...")
         else:
             exit()
+    with open(dir_path + "index.json", "w") as file:
+        file.write(json.dumps(config))
     try:
         os.makedirs(swf_path)
         os.makedirs(svg_path)
@@ -117,7 +119,7 @@ def main():
     # print(decode(config['pageInfo']))
     print("文档名：" + config['p_name'])
     print("上传日期：" + config['p_upload_date'])
-    init(config['p_name'])
+    init(config)
     get_swf(config)
     convert(config['pageCount'])
 
@@ -137,6 +139,7 @@ def get_swf(config):
 
 def convert(pageCount):
     print("Now start converting...")
+    print("!! Warnning: This process may uses very big memory(100MB-5GB), and much time. We will optimize it in future. !!")
     pdf=PdfWriter()
     def execute(num):
         os.system("java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame " + r(svg_path) + " " + r(swf_path + str(num) + '.swf'))
