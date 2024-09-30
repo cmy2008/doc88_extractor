@@ -16,7 +16,7 @@ if platform.system() == "Windows":
         except:
             print("Error when setting environment.")
     else:
-        print("Not found GTK runtime, maybe not install?")
+        print("GTK runtime not found, maybe not install?")
 import sys
 import json
 import requests
@@ -33,7 +33,7 @@ def check_ffdec():
     ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip"
     if not os.path.exists("ffdec/ffdec.jar"):
         print("Ffdec not found! Now start downloading ffdec...")
-        print("Warnning: use built download method is really really really slow, if you want, please put the ffdec files that from local(extracted ZIP format, make sure that have 'ffdecjar') to diretory 'ffdec'.")
+        print("Warnning: use built download method is really really really slow, if you want faster, please put the ffdec files that from local(make sure that have 'ffdec.jar') to diretory 'ffdec'.")
         print("Download link: https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip")
         try:
             os.makedirs("ffdec")
@@ -43,8 +43,8 @@ def check_ffdec():
         try:
             download(ffdec_url,"ffdec/ffdec.zip")
         except:
-            print("Download error! Plase check the Intenet connection or modify the 'ffdec_url'. If still not work, extract the ffdec files to diretory ffdec.")
-        print("Download done! Start extra zip...")
+            print("Download error! Plase check the Intenet connection or modify the 'ffdec_url' variable. If still not work, extract the ffdec files to diretory ffdec.")
+        print("Download done! Starting extra zip...")
         extractzip("ffdec/ffdec.zip","ffdec/")
 
     if os.system("java --version") != 0:
