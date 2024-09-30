@@ -1,5 +1,5 @@
 # WHAT IS THIS
-## Introduce
+## Introduction
 A tool make you download doc88 documents.
 ## Features
 NOT JUST IMAGE, IT HAS REAL SHAPES
