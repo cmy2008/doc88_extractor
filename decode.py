@@ -151,12 +151,12 @@ def encode2(str):
 def get_url(p_code,headerInfo,page,p_swf,pageInfo,ebt_host):
     Viewer._GZ = ebt_host
     Viewer._7I = int(p_code)
-    _XC = int(headerInfo.strip('"'))
+    _XC = int(headerInfo.replace('"',"").split(',')[int((page-1)/50)])
     _xF = int(page)
     Viewer._lB = decode(pageInfo).split(",")
     Viewer._n5 = p_swf
     _hj = Viewer._lB[_xF - 1].split("-")
-    _ca = 1
+    _ca = int((page-1)/50)+1
     _Ev = _hj[3]
     _jo = _hj[4]
     _GJ = Viewer._GZ + "/getebt-" + encode2(f"{_ca}-0-{_XC}-{Viewer._n5}") + ".ebt"
