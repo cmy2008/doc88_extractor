@@ -33,7 +33,7 @@ def check_ffdec():
     ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version22.0.1/ffdec_22.0.1.zip"
     if not os.path.exists("ffdec/ffdec.jar"):
         print("Ffdec not found! Now start downloading ffdec...")
-        print("Warnning: use built download method is really really really slow, if you want faster, please put the ffdec files that from local(make sure that have 'ffdec.jar') to diretory 'ffdec'.")
+        print("Warnning: use built download method is really really really slow, if you want faster, please put the ffdec files that from yours(make sure that have 'ffdec.jar') to diretory 'ffdec'.")
         print("Download link: " + ffdec_url)
         try:
             os.makedirs("ffdec")
@@ -44,11 +44,13 @@ def check_ffdec():
             download(ffdec_url,"ffdec/ffdec.zip")
         except:
             print("Download error! Plase check the Internet connection or modify the 'ffdec_url' content in function 'check_ffdec'. If still not work, extract the ffdec files to diretory ffdec.")
+            exit()
         print("Download done! Start extracting...")
         try:
             extractzip("ffdec/ffdec.zip","ffdec/")
         except:
             print("Can't extract! Is the link out of date? Try change the 'ffdec_url' in function 'check_ffdec'")
+            exit()
     if os.system("java --version") != 0:
         print("Java not found! Plase install java and add java to the path.")
         exit()
