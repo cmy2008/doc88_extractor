@@ -1,6 +1,6 @@
 # WHAT IS THIS
 ## Introduction
-A tool make you download doc88 documents.
+A tool make you download the doc88 documents.
 ## Features
 NOT JUST IMAGE, IT HAS REAL SHAPES
 but can't copy the texts:(
@@ -9,15 +9,15 @@ but can't copy the texts:(
 ## Linux
 Just run:
 ```
-pip install cairosvg pypdf
+pip3 install cairosvg pypdf
 ```
 ## Windows
 First install [GTK Runtime](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases), then run:
 ```
-pip install cairosvg pypdf
+pip3 install cairosvg pypdf
 ```
 
-# USAGE
+# HOW TO USE
 ```
-python main.py
+python3 main.py
 ```
