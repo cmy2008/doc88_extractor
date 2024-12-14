@@ -30,11 +30,11 @@ from decode import decode
 from decode import get_url
 
 def check_ffdec():
-    ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip"
+    ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version22.0.1/ffdec_22.0.1.zip"
     if not os.path.exists("ffdec/ffdec.jar"):
         print("Ffdec not found! Now start downloading ffdec...")
         print("Warnning: use built download method is really really really slow, if you want faster, please put the ffdec files that from local(make sure that have 'ffdec.jar') to diretory 'ffdec'.")
-        print("Download link: https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly2789/ffdec_20.1.0_nightly2789.zip")
+        print("Download link: " + ffdec_url)
         try:
             os.makedirs("ffdec")
         except:
