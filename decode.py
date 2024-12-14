@@ -156,6 +156,7 @@ def get_url(p_code,headerInfo,page,p_swf,pageInfo,ebt_host):
         single=1
         _XC = headnums[0]
     else:
+        single=0
         _XC = headnums[int((page-1)/50)]
     _xF = int(page)
     Viewer._lB = decode(pageInfo).split(",")
@@ -164,7 +165,7 @@ def get_url(p_code,headerInfo,page,p_swf,pageInfo,ebt_host):
     if single == 1:
         _ca = 1
     else:
-        int((page-1)/50)+1
+        _ca = int((page-1)/50)+1
     _Ev = _hj[3]
     _jo = _hj[4]
     _GJ = Viewer._GZ + "/getebt-" + encode2(f"{_ca}-0-{_XC}-{Viewer._n5}") + ".ebt"
