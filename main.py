@@ -29,17 +29,29 @@ from pypdf import PdfWriter
 from decode import decode
 from decode import get_url
 
+def filesexist():
+    print("The directory already exists!")
+    user_input = input("Continue? (Y/n): ")
+    if user_input == "Y" or user_input == "y":
+        return True
+    else:
+        return False
+
 def check_ffdec():
-    ffdec_url="https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version22.0.1/ffdec_22.0.1.zip"
+    ffdec_url="https://ghproxy.cn/https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version22.0.1/ffdec_22.0.1.zip"
     if not os.path.exists("ffdec/ffdec.jar"):
         print("Ffdec not found! Now start downloading ffdec...")
         print("Warnning: use built download method is really really really slow, if you want faster, please put the ffdec files that from yours(make sure that have 'ffdec.jar') to diretory 'ffdec'.")
         print("Download link: " + ffdec_url)
         try:
             os.makedirs("ffdec")
-        except:
-            print("Cannot create directory! Please delete it and retry.")
-            exit()
+        except FileExistsError:
+            if filesexist():
+                shutil.rmtree("ffdec")
+                os.makedirs("ffdec")
+                print("Continuing...")
+            else:
+                exit()
         try:
             download(ffdec_url,"ffdec/ffdec.zip")
         except:
@@ -93,10 +105,8 @@ def init(config):
     try:
         os.makedirs(dir_path)
     except FileExistsError:
-        print("The directory already exists!")
-        user_input = input("Continue? (Y/n): ")
-        if user_input == "Y" or user_input == "y":
-            print("Continuing...")
+        if filesexist():
+            pass
         else:
             exit()
     with open(dir_path + "index.json", "w") as file:
