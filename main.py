@@ -29,9 +29,14 @@ from pypdf import PdfWriter
 from decode import decode
 from decode import get_url
 
-def filesexist():
-    print("The directory already exists!")
-    user_input = input("Continue? (Y/n): ")
+def choose(text):
+    if text == "exists":
+        text="The directory already exists!"
+    print(text)
+    try:
+        user_input = input("Continue? (Y/n): ")
+    except KeyboardInterrupt:
+        exit()
     if user_input == "Y" or user_input == "y":
         return True
     else:
@@ -46,7 +51,7 @@ def check_ffdec():
         try:
             os.makedirs("ffdec")
         except FileExistsError:
-            if filesexist():
+            if choose():
                 shutil.rmtree("ffdec")
                 os.makedirs("ffdec")
                 print("Continuing...")
@@ -69,31 +74,41 @@ def check_ffdec():
 def r(str):
     return "\"" + str + "\""
 # m_main.init
-def get_str(url):
+def get_cfg(url: str):
+    if url.find("doc88.com/p-") == -1:
+        raise Exception("Invalid URL!")
     proxies = { "http": None, "https": None}
-    headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39", 'Content-Type': "application/x-www-form-urlencoded"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
+        "Content-Type": "text/html; charset=utf-8",
+        "Referer": "https://www.doc88.com/"
+    }
     request = requests.get(url, headers = headers, proxies = proxies)
+    if request.status_code == 404:
+        raise Exception("404 Not Found!")
     a = str(request.text)
     b=re.search( r'm_main.init\(\".*\"\);', a)
+    if b == None:
+        raise Exception("Config data not found! May be deleted?")
     c=b.span()
     return a[c[0]+13:c[1]-3]
 
-def download(url,filepath):
+def download(url: str,filepath: str):
     response = requests.get(url)
     with open(filepath, "wb") as f:
         f.write(response.content)
 
-def extractzip(file_path,topath):
+def extractzip(file_path: str,topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
         f.extractall(topath)
         f.close
 
-def append_pdf(pdf,file):
+def append_pdf(pdf: PdfWriter,file: str):
     with open(file,'rb') as f:
         pdf.append(f)
     return pdf
 
-def init(config):
+def init(config: dict):
     global dir_path
     dir_path = 'docs/' + config['p_name'] + '/'
     global swf_path
@@ -105,7 +120,7 @@ def init(config):
     try:
         os.makedirs(dir_path)
     except FileExistsError:
-        if filesexist():
+        if choose():
             pass
         else:
             exit()
@@ -123,21 +138,35 @@ def init(config):
     # swf_format = "\""  + dir_path[:-1] + "\"" + '/swf/'
 
 def main():
-    encoded_str = get_str(input('请输入网址：'))
+    try:
+        url = input('请输入网址：')
+    except KeyboardInterrupt:
+        exit()
+    try:
+        encoded_str=get_cfg(url)
+    except Exception as Err:
+        print(Err)
+        return False
     try:
         config = json.loads(decode(encoded_str))
-    except:
+    except json.decoder.JSONDecodeError:
         print("Can't read! Maybe keys were changed?")
-        exit()
+        return False
     # print(decode(encoded_str))
     # print(decode(config['pageInfo']))
     print("文档名：" + config['p_name'])
     print("上传日期：" + config['p_upload_date'])
     init(config)
-    get_swf(config)
-    convert(config['pageCount'])
+    try:
+        get_swf(config)
+        convert(config['pageCount'])
+        return True
+    except Exception as err:
+        print(err)
+        return False
 
-def get_swf(config):
+
+def get_swf(config: dict):
     print("Downloading PK...")
     for i in range(0,(int(config['pageCount']/50))+1):
         print("Downloading PK" + str(i) + '...')
@@ -154,11 +183,11 @@ def get_swf(config):
         compressor.make(dir_path + url[0][25:],dir_path + url[1][25:],swf_path + str(i) + '.swf')
     print("Donload done. (total page: " + str(config['pageCount']) + ")")
 
-def convert(pageCount):
+def convert(pageCount: int):
     print("Now start converting...")
     print("!! Warnning: This process may uses very big memory(100MB-5GB), and much time. We will optimize it in future. !!")
     pdf=PdfWriter()
-    def execute(num):
+    def execute(num: int):
         os.system("java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame " + r(svg_path) + " " + r(swf_path + str(num) + '.swf'))
         shutil.move(svg_path + '1.svg',svg_path + str(i) + '_.svg')
     for i in range(1,pageCount+1):
@@ -184,5 +213,13 @@ if __name__ == "__main__":
     check_ffdec()
     a=sys.argv
     if len(a) == 1:
-        main()
-        clean()
+        while True:
+            if main():
+                clean()
+                if choose(""):
+                    pass
+                else:
+                    exit()
+            else:
+                pass
+
