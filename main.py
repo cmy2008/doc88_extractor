@@ -30,12 +30,15 @@ from pypdf import PdfWriter
 from decode import decode
 from decode import get_url
 
-def choose(text):
+def choose(text = ""):
     if text == "exists":
-        text="The directory already exists!"
-    print(text)
+        text="The directory already exists!\nContinue? (Y/n): "
+    elif text == "down":
+        text="是否下载，否则继续提取预览文档？ (Y/n): "
+    else:
+        text="Continue? (Y/n): "
     try:
-        user_input = input("Continue? (Y/n): ")
+        user_input = input(text)
     except KeyboardInterrupt:
         exit()
     if user_input == "Y" or user_input == "y":
@@ -52,7 +55,7 @@ def check_ffdec():
         try:
             os.makedirs("ffdec")
         except FileExistsError:
-            if choose():
+            if choose("exists"):
                 shutil.rmtree("ffdec")
                 os.makedirs("ffdec")
                 print("Continuing...")
@@ -74,17 +77,19 @@ def check_ffdec():
         exit()
 def r(str):
     return "\"" + str + "\""
-# m_main.init
-def get_cfg(url: str):
-    if url.find("doc88.com/p-") == -1:
-        raise Exception("Invalid URL!")
+def get_request(url: str):
     proxies = { "http": None, "https": None}
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
         "Content-Type": "text/html; charset=utf-8",
         "Referer": "https://www.doc88.com/"
     }
-    request = requests.get(url, headers = headers, proxies = proxies)
+    return requests.get(url, headers = headers, proxies = proxies)
+
+def get_cfg(url: str):
+    if url.find("doc88.com/p-") == -1:
+        raise Exception("Invalid URL!")
+    request = get_request(url)
     if request.status_code == 404:
         raise Exception("404 Not Found!")
     a = str(request.text)
@@ -98,6 +103,7 @@ def download(url: str,filepath: str):
     response = requests.get(url)
     with open(filepath, "wb") as f:
         f.write(response.content)
+    return filepath
 
 def extractzip(file_path: str,topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
@@ -121,7 +127,7 @@ def init(config: dict):
     try:
         os.makedirs(dir_path)
     except FileExistsError:
-        if choose():
+        if choose("exists"):
             pass
         else:
             exit()
@@ -157,6 +163,23 @@ def main():
     # print(decode(config['pageInfo']))
     print("文档名：" + config['p_name'])
     print("上传日期：" + config['p_upload_date'])
+    print("总页数：" + str(config['pageCount']))
+    if config['p_download'] == "1":
+        print("该文档为免费文档，可直接下载！")
+        if choose("down"):
+            try:
+                if config['if_zip'] == 0:
+                    doc_format=str.lower(config['p_doc_format'])
+                else:
+                    doc_format='zip'
+                file_path = "docs/" + config['p_name'] + '.' + doc_format
+                download(get_request("https://www.doc88.com/doc.php?act=download&pcode=" + config['p_code']).text, file_path)
+                print("Saved file to " + file_path)
+                return True
+            except Exception as err:
+                print("Downlaod error: " + str(err))
+        else:
+            print("Continuing...")
     init(config)
     try:
         get_swf(config)
@@ -216,8 +239,11 @@ if __name__ == "__main__":
     if len(a) == 1:
         while True:
             if main():
-                clean()
-                if choose(""):
+                try:
+                    clean()
+                except NameError:
+                    pass
+                if choose():
                     pass
                 else:
                     exit()
