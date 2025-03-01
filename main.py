@@ -1,10 +1,10 @@
 print("DOC88 （预览）文档提取工具")
-print("免责声明： 仅供学习或交流用，请在 24 小时内删除本程序，严禁用于任何商业或非法用途，使用该工具而产生的任何法律后果，用户需自行承担全部责任")
 print("by: Cuite_Piglin")
+print("\n免责声明： 仅供学习或交流用，请在 24 小时内删除本程序，严禁用于任何商业或非法用途，使用该工具而产生的任何法律后果，用户需自行承担全部责任\n")
 import os
 import platform
 if platform.system() == "Windows":
-    print("警告：你正在使用 Windows 系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用 Cairo 库才能进行 pdf 的转换，建议你安装 GTK 运行库（需要 200MB 左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的 bin 目录添加到系统环境的 PATH 中然后重启终端或 Vscode")
+    print("警告：你正在使用 Windows 系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用 Cairo 库才能进行 pdf 的转换，建议你安装 GTK 运行库（需要 200MB 左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的 bin 目录添加到系统环境的 PATH 中然后重启终端或 Vscode\n")
     # os.add_dll_directory()
     list=os.environ['Path'].split(';')
     # print("Warnning: You're using Windows, please follow the README.md to install Cairo.")
@@ -69,7 +69,7 @@ def check_ffdec():
         except zipfile.BadZipFile:
             print("Can't extract! Is the link out of date? Try to update the 'ffdec_url' in function 'check_ffdec'")
             exit()
-    if os.system("java --version") != 0:
+    if os.system("java --version > " + os.devnull) != 0:
         print("Java not found! Plase install java and add java to the path.")
         exit()
 def r(str):
