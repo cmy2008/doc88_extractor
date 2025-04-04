@@ -65,15 +65,18 @@ def check_ffdec():
             download(ffdec_url,"ffdec/ffdec.zip")
         except:
             print("Download error! Plase check the Internet connection or modify the 'ffdec_url' content in function 'check_ffdec'. If still not work, extract the ffdec files to diretory ffdec.")
+            input()
             exit()
         print("Download done! Start extracting...")
         try:
             extractzip("ffdec/ffdec.zip","ffdec/")
         except zipfile.BadZipFile:
             print("Can't extract! Is the link out of date? Try to update the 'ffdec_url' in function 'check_ffdec'")
+            input()
             exit()
-    if os.system("java --version > " + os.devnull) != 0:
-        print("Java not found! Plase install java and add java to the path.")
+    if os.system("java -version > " + os.devnull) != 0:
+        print("Java not found! Plase install java and add java to PATH.")
+        input()
         exit()
 def r(str):
     return "\"" + str + "\""
