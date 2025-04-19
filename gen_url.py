@@ -16,5 +16,5 @@ def gen_url(p_code: str,headerInfo: str,page: int,p_swf,pageInfo: str,ebt_host: 
     else:
         level_num = int((page-1)/50)+1
     PK = ebt_host + "/getebt-" + encode(f"{level_num}-0-{level}-{p_swf}",key2) + ".ebt"
-    BK = ebt_host + "/getebt-" + encode(f"{level_num}-{pageid[3]}-{pageid[4]}-{p_swf}-{page}-{p_code}",key2) + ".ebt"
-    return PK,BK
+    PH = ebt_host + "/getebt-" + encode(f"{level_num}-{pageid[3]}-{pageid[4]}-{p_swf}-{page}-{p_code}",key2) + ".ebt"
+    return PK,PH
