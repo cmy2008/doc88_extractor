@@ -27,8 +27,7 @@ import zipfile
 import shutil
 import cairosvg
 from pypdf import PdfWriter
-from decode import decode
-from decode import get_url
+from gen_url import *
 
 def choose(text = ""):
     if text == "exists":
@@ -160,6 +159,9 @@ def main():
     try:
         config = json.loads(decode(encoded_str))
     except json.decoder.JSONDecodeError:
+        print("Can't read!")
+        return False
+    except (ValueError, UnicodeDecodeError):
         print("Can't read! Maybe keys were changed?")
         return False
     # print(decode(encoded_str))
@@ -197,13 +199,13 @@ def get_swf(config: dict):
     print("Downloading PK...")
     for i in range(0,(int(config['pageCount']/50))+1):
         print("Downloading PK" + str(i) + '...')
-        url=get_url(config['p_code'],config['headerInfo'],50*i+1,config['p_swf'],config['pageInfo'],config['ebt_host'])
+        url=gen_url(config['p_code'],config['headerInfo'],50*i+1,config['p_swf'],config['pageInfo'],config['ebt_host'])
         file_path=dir_path + url[0][25:]
         print(url[0])
         download(url[0],file_path)
     for i in range(1,config['pageCount']+1):
         print("Downloading page " + str(i) + '...')
-        url=get_url(config['p_code'],config['headerInfo'],i,config['p_swf'],config['pageInfo'],config['ebt_host'])
+        url=gen_url(config['p_code'],config['headerInfo'],i,config['p_swf'],config['pageInfo'],config['ebt_host'])
         file_path = dir_path  + url[1][25:]
         print(url[1])
         download(url[1],file_path)
