@@ -99,7 +99,8 @@ def get_request(url: str):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
         "Content-Type": "text/html; charset=utf-8",
-        "Referer": "https://www.doc88.com/"}
+        "Referer": "https://www.doc88.com/",
+    }
     return requests.get(url, headers=headers, proxies=None)
 
 
@@ -217,9 +218,9 @@ def main():
 
 
 def get_swf(config: dict):
-    gen=gen_url(config)
+    gen = gen_url(config)
     print("Downloading PK...")
-    pks=[]
+    pks = []
     for i in range(0, gen.pknum()):
         print("Downloading PK" + str(i) + "...")
         url = gen.pk(i)
@@ -234,7 +235,9 @@ def get_swf(config: dict):
         print(url)
         download(url, file_path)
         compressor.make(
-            dir_path + pks[gen.level_num], dir_path + url[25:], swf_path + str(i) + ".swf"
+            dir_path + pks[gen.level_num - 1],
+            dir_path + url[25:],
+            swf_path + str(i) + ".swf",
         )
     print("Donload done. (total page: " + str(config["pageCount"]) + ")")
 
