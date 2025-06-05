@@ -96,13 +96,11 @@ def r(str):
 
 
 def get_request(url: str):
-    proxies = {"http": None, "https": None}
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
         "Content-Type": "text/html; charset=utf-8",
-        "Referer": "https://www.doc88.com/",
-    }
-    return requests.get(url, headers=headers, proxies=proxies)
+        "Referer": "https://www.doc88.com/"}
+    return requests.get(url, headers=headers, proxies=None)
 
 
 def get_cfg(url: str):
@@ -123,6 +121,7 @@ def download(url: str, filepath: str):
     response = requests.get(url)
     with open(filepath, "wb") as f:
         f.write(response.content)
+        f.close()
     return filepath
 
 
@@ -218,35 +217,24 @@ def main():
 
 
 def get_swf(config: dict):
+    gen=gen_url(config)
     print("Downloading PK...")
-    for i in range(0, (int(config["pageCount"] / 50)) + 1):
+    pks=[]
+    for i in range(0, gen.pknum()):
         print("Downloading PK" + str(i) + "...")
-        url = gen_url(
-            config["p_code"],
-            config["headerInfo"],
-            50 * i + 1,
-            config["p_swf"],
-            config["pageInfo"],
-            config["ebt_host"],
-        )
-        file_path = dir_path + url[0][25:]
-        print(url[0])
-        download(url[0], file_path)
+        url = gen.pk(i)
+        file_path = dir_path + url[25:]
+        pks.append(url[25:])
+        print(url)
+        download(url, file_path)
     for i in range(1, config["pageCount"] + 1):
         print("Downloading page " + str(i) + "...")
-        url = gen_url(
-            config["p_code"],
-            config["headerInfo"],
-            i,
-            config["p_swf"],
-            config["pageInfo"],
-            config["ebt_host"],
-        )
-        file_path = dir_path + url[1][25:]
-        print(url[1])
-        download(url[1], file_path)
+        url = gen.ph(i)
+        file_path = dir_path + url[25:]
+        print(url)
+        download(url, file_path)
         compressor.make(
-            dir_path + url[0][25:], dir_path + url[1][25:], swf_path + str(i) + ".swf"
+            dir_path + pks[gen.level_num], dir_path + url[25:], swf_path + str(i) + ".swf"
         )
     print("Donload done. (total page: " + str(config["pageCount"]) + ")")
 
