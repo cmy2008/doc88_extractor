@@ -31,7 +31,7 @@ import zipfile
 import shutil
 import cairosvg
 from pypdf import PdfWriter
-from gen_url import *
+from gen_cfg import *
 
 
 def choose(text=""):
@@ -182,22 +182,26 @@ def main():
     except (ValueError, UnicodeDecodeError):
         print("Can't read! Maybe keys were changed?")
         return False
-    print("文档名：" + config["p_name"])
-    print("上传日期：" + config["p_upload_date"])
-    print("总页数：" + str(config["pageCount"]))
-    if config["p_download"] == "1":
+    global gen
+    gen = gen_cfg(config,more=False)
+    print("文档名：" + gen.p_name)
+    print("上传日期：" + gen.p_date)
+    print("页数：" + str(gen.p_countinfo))
+    if int(gen.p_countinfo) != gen.p_count:
+        print("实际页数：" + str(gen.p_count))
+    if gen.p_download == "1":
         print("该文档为免费文档，可直接下载！")
         if choose("down"):
             try:
                 if config["if_zip"] == 0:
-                    doc_format = str.lower(config["p_doc_format"])
+                    doc_format = str.lower(gen.p_doc_format)
                 else:
                     doc_format = "zip"
-                file_path = "docs/" + config["p_name"] + "." + doc_format
+                file_path = "docs/" + gen.p_name + "." + doc_format
                 download(
                     get_request(
                         "https://www.doc88.com/doc.php?act=download&pcode="
-                        + config["p_code"]
+                        + gen.p_code
                     ).text,
                     file_path,
                 )
@@ -209,16 +213,15 @@ def main():
             print("Continuing...")
     init(config)
     try:
-        get_swf(config)
-        convert(config["pageCount"])
+        get_swf()
+        convert()
         return True
     except Exception as err:
         print(err)
         return False
 
 
-def get_swf(config: dict):
-    gen = gen_url(config)
+def get_swf():
     print("Downloading PK...")
     pks = []
     for i in range(0, gen.pknum()):
@@ -228,21 +231,25 @@ def get_swf(config: dict):
         pks.append(url[25:])
         print(url)
         download(url, file_path)
-    for i in range(1, config["pageCount"] + 1):
+    for i in range(1, gen.p_count + 1):
         print("Downloading page " + str(i) + "...")
         url = gen.ph(i)
         file_path = dir_path + url[25:]
         print(url)
         download(url, file_path)
-        compressor.make(
-            dir_path + pks[gen.level_num - 1],
-            dir_path + url[25:],
-            swf_path + str(i) + ".swf",
-        )
-    print("Donload done. (total page: " + str(config["pageCount"]) + ")")
+        try:
+            compressor.make(
+                dir_path + pks[gen.level_num - 1],
+                dir_path + url[25:],
+                swf_path + str(i) + ".swf",
+            )
+        except:
+            print("Can't decompress this page! Skipping...")
+            gen.p_count-=1
+    print("Donload done. (total page: " + str(gen.p_count) + ")")
 
 
-def convert(pageCount: int):
+def convert():
     print("Now start converting...")
     print(
         "!! Warnning: This process may uses very big memory(100MB-5GB), and much time. We will optimize it in future. !!"
@@ -258,7 +265,7 @@ def convert(pageCount: int):
         )
         shutil.move(svg_path + "1.svg", svg_path + str(i) + "_.svg")
 
-    for i in range(1, pageCount + 1):
+    for i in range(1, gen.p_count + 1):
         print("Converting page " + str(i) + " to svg...")
         try:
             execute(i)
