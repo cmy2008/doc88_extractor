@@ -277,11 +277,14 @@ def convert():
                 + r(swf_path + str(i) + ".swf")
             )
             execute(i)
-        print("Converting svg to pdf...")
-        cairosvg.svg2pdf(
-            url=svg_path + str(i) + "_.svg", write_to=pdf_path + str(i) + ".pdf"
-        )
-        pdf = append_pdf(pdf, pdf_path + str(i) + ".pdf")
+        try:
+            print("Converting svg to pdf...")
+            cairosvg.svg2pdf(
+                url=svg_path + str(i) + "_.svg", write_to=pdf_path + str(i) + ".pdf"
+            )
+            pdf = append_pdf(pdf, pdf_path + str(i) + ".pdf")
+        except FileNotFoundError:
+            print("Can't convert this page! Skipping...")
     pdf.write(dir_path[:-1] + ".pdf")
     print("Saved file to " + dir_path[:-1] + ".pdf")
 
