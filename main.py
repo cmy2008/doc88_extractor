@@ -23,6 +23,7 @@ if platform.system() == "Windows":
     else:
         print("GTK runtime not found, maybe not install?")
 import sys
+import time
 import json
 import requests
 import compressor
@@ -30,9 +31,10 @@ import re
 import zipfile
 import shutil
 import cairosvg
+from concurrent.futures import ThreadPoolExecutor
 from pypdf import PdfWriter
 from gen_cfg import *
-
+from config import *
 
 def choose(text=""):
     if text == "exists":
@@ -50,6 +52,14 @@ def choose(text=""):
     else:
         return False
 
+def logw(t: str):
+        log='[' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + ']: ' + t + '\n'
+        log_dir='logs/'
+        dirc=log_dir + time.strftime('%Y-%m-%d', time.localtime()) + '.log'
+        if not os.path.isdir(log_dir):
+            os.mkdir(log_dir)
+        with open(dirc, 'a') as file:
+            file.write(log)
 
 def check_ffdec():
     ffdec_url = "https://ghproxy.cn/https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version22.0.1/ffdec_22.0.1.zip"
@@ -138,30 +148,27 @@ def append_pdf(pdf: PdfWriter, file: str):
     return pdf
 
 
-def init(config: dict):
-    global dir_path
-    dir_path = "docs/" + config["p_name"] + "/"
-    global swf_path
-    swf_path = dir_path + "swf/"
-    global pdf_path
-    pdf_path = dir_path + "pdf/"
-    global svg_path
-    svg_path = dir_path + "svg/"
-    try:
-        os.makedirs(dir_path)
-    except FileExistsError:
-        if choose("exists"):
-            pass
-        else:
-            exit()
-    with open(dir_path + "index.json", "w") as file:
-        file.write(json.dumps(config))
-    try:
-        os.makedirs(swf_path)
-        os.makedirs(svg_path)
-        os.makedirs(pdf_path)
-    except:
-        print("")
+class init():
+    def __init__(self, config: dict) -> None:
+        cfg2.dir_path = cfg2.o_dir_path +  config["p_name"] + "/"
+        cfg2.swf_path = cfg2.dir_path + cfg2.o_swf_path
+        cfg2.svg_path = cfg2.dir_path + cfg2.o_svg_path
+        cfg2.pdf_path = cfg2.dir_path + cfg2.o_pdf_path
+        try:
+            os.makedirs(cfg2.dir_path)
+        except FileExistsError:
+            if choose("exists"):
+                pass
+            else:
+                exit()
+        with open(cfg2.dir_path + "index.json", "w") as file:
+            file.write(json.dumps(config))
+        try:
+            os.makedirs(cfg2.swf_path)
+            os.makedirs(cfg2.svg_path)
+            os.makedirs(cfg2.pdf_path)
+        except:
+            print("")
 
 
 def main():
@@ -182,26 +189,25 @@ def main():
     except (ValueError, UnicodeDecodeError):
         print("Can't read! Maybe keys were changed?")
         return False
-    global gen
-    gen = gen_cfg(config,more=False)
-    print("文档名：" + gen.p_name)
-    print("上传日期：" + gen.p_date)
-    print("页数：" + str(gen.p_countinfo))
-    if int(gen.p_countinfo) != gen.p_count:
-        print("实际页数：" + str(gen.p_count))
-    if gen.p_download == "1":
+    cfg = gen_cfg(config,more=False)
+    print("文档名：" + cfg.p_name)
+    print("上传日期：" + cfg.p_date)
+    print("页数：" + str(cfg.p_countinfo))
+    if int(cfg.p_countinfo) != cfg.p_count:
+        print("实际页数：" + str(cfg.p_count))
+    if cfg.p_download == "1":
         print("该文档为免费文档，可直接下载！")
         if choose("down"):
             try:
                 if config["if_zip"] == 0:
-                    doc_format = str.lower(gen.p_doc_format)
+                    doc_format = str.lower(cfg.p_doc_format)
                 else:
                     doc_format = "zip"
-                file_path = "docs/" + gen.p_name + "." + doc_format
+                file_path = "docs/" + cfg.p_name + "." + doc_format
                 download(
                     get_request(
                         "https://www.doc88.com/doc.php?act=download&pcode="
-                        + gen.p_code
+                        + cfg.p_code
                     ).text,
                     file_path,
                 )
@@ -209,91 +215,170 @@ def main():
                 return True
             except Exception as err:
                 print("Downlaod error: " + str(err))
+                logw("Downlaod error: " + str(err))
         else:
             print("Continuing...")
     init(config)
     try:
-        get_swf()
-        convert()
+        get_swf(cfg)
+        convert(cfg)
         return True
     except Exception as err:
         print(err)
         return False
+class downloader():
+    def __init__(self,cfg) -> None:
+        self.pks = []
+        self.cfg=cfg
+        self.downloaded=False
+        self.progressfile=cfg2.dir_path + "progress.json"
+        if os.path.isfile(self.progressfile):
+            self.read_progress()
+        else:
+            self.progress={
+                "pk": [],
+                "ph": []
+            }
+    
+    def read_progress(self):
+        with open(self.progressfile, "r") as file:
+            self.progress = json.loads(file.read())
+            file.close()
 
+    def save_progress(self,type: str, page: int):
+        self.progress[type].append(page)
+        with open(self.progressfile, "w") as file:
+            file.write(json.dumps(self.progress))
+            file.close()
 
-def get_swf():
-    print("Downloading PK...")
-    pks = []
-    for i in range(0, gen.pknum()):
-        print("Downloading PK" + str(i) + "...")
-        url = gen.pk(i)
-        file_path = dir_path + url[25:]
-        pks.append(url[25:])
+    def pk(self,i):
+        print(f"Downloading PK {i}...")
+        url = self.cfg.pk(i)
+        file_path = cfg2.dir_path + url[25:]
+        self.pks.append(url[25:])
+        if i in self.progress["pk"]:
+            print("Using Cache...")
+            return None
         print(url)
-        download(url, file_path)
-    for i in range(1, gen.p_count + 1):
-        print("Downloading page " + str(i) + "...")
-        url = gen.ph(i)
-        file_path = dir_path + url[25:]
+        try:
+            download(url, file_path)
+            self.save_progress("pk",i)
+        except Exception as e:
+            logw(f"Download PK {i} error: {e}")
+            self.downloaded=False
+
+    def ph(self,i):
+        print(f"Downloading page {i}...")
+        url = self.cfg.ph(i)
+        file_path = cfg2.dir_path + url[25:]
+        if i in self.progress["ph"]:
+            print("Using Cache...")
+            return None
         print(url)
-        download(url, file_path)
+        try:
+            download(url, file_path)
+            self.save_progress("ph",i)
+        except Exception as e:
+            logw(f"Download PH {i} error: {e}")
+            self.downloaded=False
+
+    def makeswf(self,i):
         try:
             compressor.make(
-                dir_path + pks[gen.level_num - 1],
-                dir_path + url[25:],
-                swf_path + str(i) + ".swf",
+                cfg2.dir_path + self.pks[self.cfg.level_num - 1],
+                cfg2.dir_path + self.cfg.ph(i)[25:],
+                cfg2.swf_path + str(i) + ".swf",
             )
-        except:
+        except Exception as e:
             print("Can't decompress this page! Skipping...")
-            gen.p_count-=1
-    print("Donload done. (total page: " + str(gen.p_count) + ")")
+            logw(str(e))
+            self.cfg.p_count-=1
 
+def get_swf(cfg):
+    max_workers=5
+    down=downloader(cfg)
+    print("Downloading PK...")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(0, cfg.pknum()):
+            executor.submit(down.pk, i)
+    print("Downloading PH...")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(1, cfg.p_count + 1):
+            executor.submit(down.ph, i)
+    print("Making pages...")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(1, cfg.p_count + 1):
+            executor.submit(down.makeswf, i)
+    print("Donload done. (total page: " + str(cfg.p_count) + ")")
 
-def convert():
-    print("Now start converting...")
-    print(
-        "!! Warnning: This process may uses very big memory(100MB-5GB), and much time. We will optimize it in future. !!"
-    )
-    pdf = PdfWriter()
-
-    def execute(num: int):
-        os.system(
-            "java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame "
-            + r(svg_path)
-            + " "
-            + r(swf_path + str(num) + ".swf")
-        )
-        shutil.move(svg_path + "1.svg", svg_path + str(i) + "_.svg")
-
-    for i in range(1, gen.p_count + 1):
+class converter():
+    def __init__(self) -> None:
+        self.pdf=PdfWriter()
+        self.pdflist=[]
+    def swf2svg(self,i: int):
+        def execute(num: int):
+            dirpath=cfg2.svg_path + str(num) + '/'
+            log=os.popen(
+                "java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame "
+                + r(dirpath)
+                + " "
+                + r(cfg2.swf_path + str(num) + ".swf")
+            ).read()
+            shutil.move(dirpath + "1.svg", cfg2.svg_path + str(i) + "_.svg")
+            shutil.rmtree(dirpath)
+        
         print("Converting page " + str(i) + " to svg...")
         try:
             execute(i)
         except FileNotFoundError:
-            os.system(
+            log=os.popen(
                 "java -jar ffdec/ffdec.jar -header -set frameCount 1 "
-                + r(swf_path + str(i) + ".swf")
+                + r(cfg2.swf_path + str(i) + ".swf")
                 + " "
-                + r(swf_path + str(i) + ".swf")
-            )
-            execute(i)
+                + r(cfg2.swf_path + str(i) + ".swf")
+            ).read()
+            try:
+                execute(i)
+            except FileNotFoundError:
+                print("Can't convert this page! Skipping...")
+                logw("SVG converting error: " + log)
+    def svg2pdf(self,i: int):
         try:
-            print("Converting svg to pdf...")
+            print(f"Converting page {i} to pdf...")
             cairosvg.svg2pdf(
-                url=svg_path + str(i) + "_.svg", write_to=pdf_path + str(i) + ".pdf"
+                url=cfg2.svg_path + str(i) + "_.svg", write_to=cfg2.pdf_path + str(i) + ".pdf"
             )
-            pdf = append_pdf(pdf, pdf_path + str(i) + ".pdf")
+            self.pdflist.append(i)
         except FileNotFoundError:
             print("Can't convert this page! Skipping...")
-    pdf.write(dir_path[:-1] + ".pdf")
-    print("Saved file to " + dir_path[:-1] + ".pdf")
+
+    def makepdf(self):
+        for i in self.pdflist:
+            self.pdf = append_pdf(self.pdf, cfg2.pdf_path + str(i) + ".pdf")
+
+def convert(cfg):
+    print("Now start converting...")
+    print(
+        "!! Warnning: This process may uses very big memory(100MB-5GB), and much time. We will optimize it in future. !!"
+    )
+    max_workers=5
+    doc=converter()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(1, cfg.p_count + 1):
+            executor.submit(doc.swf2svg, i)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(1, cfg.p_count + 1):
+            executor.submit(doc.svg2pdf, i)
+    doc.makepdf()
+    doc.pdf.write(cfg2.dir_path[:-1] + ".pdf")
+    print("Saved file to " + cfg2.dir_path[:-1] + ".pdf")
 
 
-def clean():
+def clean(cfg2):
     print("cleaning cache...")
-    shutil.rmtree(swf_path)
-    shutil.rmtree(pdf_path)
-    shutil.rmtree(svg_path)
+    shutil.rmtree(cfg2.swf_path)
+    shutil.rmtree(cfg2.pdf_path)
+    shutil.rmtree(cfg2.svg_path)
 
 
 if __name__ == "__main__":
@@ -303,7 +388,7 @@ if __name__ == "__main__":
         while True:
             if main():
                 try:
-                    clean()
+                    clean(cfg2)
                 except NameError:
                     pass
                 if choose():

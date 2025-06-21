@@ -7,5 +7,6 @@ __pycache__/
 docs/
 ffdec/
 test/
-fonts/0.ttf
+fonts/
 .vscode/launch.json
+logs/
