@@ -28,7 +28,7 @@ class gen_cfg:
     
     def pk(self, page: int)-> str:
         headnums=self.headerInfo.replace('"',"").split(',')
-        return self.ebt_host + "/getebt-" + encode(f"{page}-0-{headnums[page]}-{self.p_swf}",key2) + ".ebt"
+        return self.ebt_host + "/getebt-" + encode(f"{page}-0-{headnums[page-1]}-{self.p_swf}",key2) + ".ebt"
         
     def ph(self,page: int)-> str:
         pageid = self.pageids[page - 1].split("-")

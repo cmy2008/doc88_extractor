@@ -228,7 +228,6 @@ def main():
         return False
 class downloader():
     def __init__(self,cfg) -> None:
-        self.pks = []
         self.cfg=cfg
         self.downloaded=False
         self.progressfile=cfg2.dir_path + "progress.json"
@@ -255,7 +254,6 @@ class downloader():
         print(f"Downloading PK {i}...")
         url = self.cfg.pk(i)
         file_path = cfg2.dir_path + url[25:]
-        self.pks.append(url[25:])
         if i in self.progress["pk"]:
             print("Using Cache...")
             return None
@@ -286,9 +284,9 @@ class downloader():
         try:
             level_num = self.cfg.page_levels[i]
             compressor.make(
-                cfg2.dir_path + self.pks[level_num - 1],
+                cfg2.dir_path + self.cfg.pk(level_num)[25:],
                 cfg2.dir_path + self.cfg.ph(i)[25:],
-                cfg2.swf_path + str(i) + ".swf",
+                cfg2.swf_path + str(i) + ".swf"
             )
         except Exception as e:
             print(f"Can't decompress page {i}! Skipping...")
@@ -300,7 +298,7 @@ def get_swf(cfg):
     down=downloader(cfg)
     print("Downloading PK...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(0, cfg.pknum()):
+        for i in range(1, cfg.pknum()+1):
             executor.submit(down.pk, i)
     print("Downloading PH...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
