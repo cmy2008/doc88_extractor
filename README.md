@@ -2,8 +2,7 @@
 ## Introduction
 A tool make you download the doc88 documents.
 ## Features
-NOT JUST IMAGE, IT HAS REAL SHAPES
-but can't copy the texts:(
+NOT JUST IMAGE, IT HAS REAL SHAPES AND TEXTS, ALOMOST SAME AS ORIGINAL DOCUMENT.
 
 # INSTALL
 ## Python
@@ -26,3 +25,6 @@ pip3 install cairosvg pypdf requests
 ```
 python3 main.py
 ```
+
+# CONFIGURATION
+All optional configuration will be saw in config.py.

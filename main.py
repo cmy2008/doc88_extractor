@@ -62,7 +62,7 @@ def logw(t: str):
             file.write(log)
 
 def check_ffdec():
-    ffdec_url = "https://ghproxy.cn/https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version22.0.1/ffdec_22.0.1.zip"
+    ffdec_url = "https://ghproxy.cn/https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version24.0.1/ffdec_24.0.1.zip"
     if not os.path.exists("ffdec/ffdec.jar"):
         print("Ffdec not found! Now start to download ffdec.")
         print(
@@ -295,7 +295,7 @@ class downloader():
             self.cfg.p_count-=1
 
 def get_swf(cfg):
-    max_workers=5
+    max_workers=10
     down=downloader(cfg)
     print("Downloading PK...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -314,7 +314,26 @@ def get_swf(cfg):
 class converter():
     def __init__(self) -> None:
         self.pdf=PdfWriter()
-        self.pdflist=[]
+        self.pdflist=set()
+        try:
+            if cfg2.svgfontface:
+                log=os.popen(
+                    "java -jar ffdec/ffdec.jar -config textExportExportFontFace=true"
+                ).read()
+            else:
+                log=os.popen(
+                    "java -jar ffdec/ffdec.jar -config textExportExportFontFace=flase"
+                ).read()
+        except Exception as err:
+            logw(str(err))
+    def set_swf(self,i:int):
+        return os.popen(
+                "java -jar ffdec/ffdec.jar -header -set frameCount 1 "
+                + r(cfg2.swf_path + str(i) + ".swf")
+                + " "
+                + r(cfg2.swf_path + str(i) + ".swf")
+        ).read()
+    
     def swf2svg(self,i: int):
         def execute(num: int):
             dirpath=cfg2.svg_path + str(num) + '/'
@@ -331,24 +350,44 @@ class converter():
         try:
             execute(i)
         except FileNotFoundError:
-            log=os.popen(
-                "java -jar ffdec/ffdec.jar -header -set frameCount 1 "
-                + r(cfg2.swf_path + str(i) + ".swf")
-                + " "
-                + r(cfg2.swf_path + str(i) + ".swf")
-            ).read()
+            log=self.set_swf(i)
             try:
                 execute(i)
             except FileNotFoundError:
                 print("Can't convert this page! Skipping...")
                 logw("SVG converting error: " + log)
+    
+    def swf2pdf(self,i: int):
+        def execute(num: int):
+            dirpath=cfg2.pdf_path + str(num) + '/'
+            log=os.popen(
+                "java -jar ffdec/ffdec.jar -format frame:pdf -select 1 -export frame "
+                + r(dirpath)
+                + " "
+                + r(cfg2.swf_path + str(num) + ".swf")
+            ).read()
+            shutil.move(dirpath + "frames.pdf", cfg2.pdf_path + str(i) + "_.pdf")
+            shutil.rmtree(dirpath)
+            shutil.move(cfg2.pdf_path + str(i) + "_.pdf", cfg2.pdf_path + str(i) + ".pdf")
+            self.pdflist.add(i)
+        print("Converting page " + str(i) + " to pdf...")
+        try:
+            execute(i)
+        except FileNotFoundError:
+            log=self.set_swf(i)
+            try:
+                execute(i)
+            except FileNotFoundError:
+                print("Can't convert this page! Skipping...")
+                logw("PDF converting error: " + log)
+
     def svg2pdf(self,i: int):
         try:
             print(f"Converting page {i} to pdf...")
             cairosvg.svg2pdf(
                 url=cfg2.svg_path + str(i) + "_.svg", write_to=cfg2.pdf_path + str(i) + ".pdf"
             )
-            self.pdflist.append(i)
+            self.pdflist.add(i)
         except FileNotFoundError:
             print("Can't convert this page! Skipping...")
 
@@ -363,15 +402,21 @@ def convert(cfg):
     )
     max_workers=5
     doc=converter()
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(1, cfg.p_count + 1):
-            executor.submit(doc.swf2svg, i)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(1, cfg.p_count + 1):
-            executor.submit(doc.svg2pdf, i)
+    if cfg2.swf2pdf:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for i in range(1, cfg.p_count + 1):
+                executor.submit(doc.swf2pdf, i)
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for i in range(1, cfg.p_count + 1):
+                executor.submit(doc.swf2svg, i)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for i in range(1, cfg.p_count + 1):
+                executor.submit(doc.svg2pdf, i)
     doc.makepdf()
     doc.pdf.write(cfg2.dir_path[:-1] + ".pdf")
     print("Saved file to " + cfg2.dir_path[:-1] + ".pdf")
+    print("Tip: Sometimes viewing the file in edge will cause a problem that can't display texts properly, but you can use another viewer such as Chrome.")
 
 
 def clean(cfg2):
@@ -386,7 +431,7 @@ if __name__ == "__main__":
     a = sys.argv
     if len(a) == 1:
         while True:
-            if main():
+            if main() and cfg2.clean:
                 try:
                     clean(cfg2)
                 except NameError:
