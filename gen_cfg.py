@@ -14,6 +14,11 @@ class gen_cfg:
         self.p_doc_format=config['p_doc_format']
         self.pageids=decode(self.pageInfo).split(",")
         self.p_count=len(self.pageids)
+        self.page_levels = {}
+        for idx, pageid in enumerate(self.pageids):
+            parts = pageid.split('-')
+            self.page_levels[idx+1] = int(parts[0])
+        
         if more:
             self.get_more()
 
@@ -27,8 +32,10 @@ class gen_cfg:
         
     def ph(self,page: int)-> str:
         pageid = self.pageids[page - 1].split("-")
-        self.level_num = int(pageid[0])
-        return self.ebt_host + "/getebt-" + encode(f"{self.level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}",key2) + ".ebt"
+        level_num = self.page_levels[page]
+        return self.ebt_host + "/getebt-" + encode(
+            f"{level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}", key2
+        ) + ".ebt"
     
     def get_more(self)-> None:
         ids=self.pageids

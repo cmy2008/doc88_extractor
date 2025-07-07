@@ -282,17 +282,18 @@ class downloader():
             logw(f"Download PH {i} error: {e}")
             self.downloaded=False
 
-    def makeswf(self,i):
+    def makeswf(self, i):
         try:
+            level_num = self.cfg.page_levels[i]
             compressor.make(
-                cfg2.dir_path + self.pks[self.cfg.level_num - 1],
+                cfg2.dir_path + self.pks[level_num - 1],
                 cfg2.dir_path + self.cfg.ph(i)[25:],
                 cfg2.swf_path + str(i) + ".swf",
             )
         except Exception as e:
-            print("Can't decompress this page! Skipping...")
+            print(f"Can't decompress page {i}! Skipping...")
             logw(str(e))
-            self.cfg.p_count-=1
+            self.cfg.p_count -= 1
 
 def get_swf(cfg):
     max_workers=10
