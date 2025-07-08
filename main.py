@@ -425,7 +425,7 @@ def convert(cfg):
     doc.makepdf()
     doc.pdf.write(cfg2.dir_path[:-1] + ".pdf")
     print("Saved file to " + cfg2.dir_path[:-1] + ".pdf")
-    print("Tip: Sometimes viewing the file in edge will cause a problem that can't display texts properly, but you can use another viewer such as Chrome.")
+    print("Tip: Sometimes viewing the file in Edge will cause some problems that can't display texts properly, but you can use another viewer such as Chrome.")
 
 
 def clean(cfg2):
