@@ -259,12 +259,11 @@ class downloader():
 
     def pk(self,i: int):
         url = self.cfg.pk(i)
-        print(f"Downloading PK {i} {url}")
+        print(f"Downloading PK {i}: \n{url}")
         file_path = cfg2.dir_path + url[25:]
         if i in self.progress["pk"]:
             print("Using Cache...")
             return None
-        print(url)
         try:
             download(url, file_path)
             self.save_progress("pk",i)
@@ -274,17 +273,16 @@ class downloader():
 
     def ph(self,i: int):
         url = self.cfg.ph(i)
-        print(f"Downloading page {i}: {url}")
+        print(f"Downloading page {i}: \n{url}")
         file_path = cfg2.dir_path + url[25:]
         if i in self.progress["ph"]:
             print("Using Cache...")
             return None
-        print(url)
         try:
             download(url, file_path)
             self.save_progress("ph",i)
         except Exception as e:
-            logw(f"Download PH {i} error: {e}")
+            logw(f"Download page {i} error: {e}")
             self.downloaded=False
 
     def makeswf(self, i: int):
