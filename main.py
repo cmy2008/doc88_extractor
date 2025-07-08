@@ -421,6 +421,7 @@ def convert(cfg):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(1, cfg.p_count + 1):
                 executor.submit(doc.svg2pdf, i)
+    print("Now start making pdf, please wait...")
     doc.makepdf()
     doc.pdf.write(cfg2.dir_path[:-1] + ".pdf")
     print("Saved file to " + cfg2.dir_path[:-1] + ".pdf")
