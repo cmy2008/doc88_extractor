@@ -32,7 +32,9 @@ python3 main.py
 ```
 
 # CONFIGURATION
-When you first run it, there will be a config.json.
+When you first run it, there will be a config.json:
+```
 swf2svg: If true, then swf files will be converted to svg first.
 svgfontface: Only working when swf2pdf is false. If true, then the texts will be converted, but this will impact pdf converting causing a lot errors.
 clean: If false, the swf,pdf,svg files wii be kept.
+```
