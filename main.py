@@ -5,23 +5,26 @@ print(
 )
 import os
 import platform
+from config import *
+if cfg2.swf2svg:
+    print("使用 SVG 转换功能建议同时关闭 font-face 功能，否则将会导致大量转换失败，若只需要 SVG 文件可关闭清理功能，文件将会生成到文档目录下的 svg 目录")
+    if platform.system() == "Windows":
+        print(
+            "警告：你正在使用 Windows 系统并使用 SVG 转换功能，虽然我们有意使其在多平台下工作，但需要使用 Cairo 库才能进行 SVG 的转换，建议你安装 GTK 运行库（需要 200MB 左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的 bin 目录添加到系统环境的 PATH 中然后重启终端或 Vscode\n"
+        )
+        list = os.environ["Path"].split(";")
+        import re
 
-if platform.system() == "Windows":
-    print(
-        "警告：你正在使用 Windows 系统下使用此工具，虽然我们有意使其在多平台下运行，但需要使用 Cairo 库才能进行 pdf 的转换，建议你安装 GTK 运行库（需要 200MB 左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的 bin 目录添加到系统环境的 PATH 中然后重启终端或 Vscode\n"
-    )
-    list = os.environ["Path"].split(";")
-    import re
-
-    pattern = re.compile(r"GTK.?-Runtime")
-    matches = [item for item in list if pattern.search(item)]
-    if matches:
-        try:
-            os.add_dll_directory(matches[0])
-        except:
-            print("Error when setting environment.")
-    else:
-        print("GTK runtime not found, maybe not install?")
+        pattern = re.compile(r"GTK.?-Runtime")
+        matches = [item for item in list if pattern.search(item)]
+        if matches:
+            try:
+                os.add_dll_directory(matches[0])
+            except:
+                print("Error when setting environment.")
+        else:
+            print("GTK runtime not found, maybe not install?")
+    import cairosvg
 import sys
 import time
 import json
@@ -30,12 +33,11 @@ import compressor
 import re
 import zipfile
 import shutil
-import cairosvg
 from retrying import retry
 from concurrent.futures import ThreadPoolExecutor
 from pypdf import PdfWriter
 from gen_cfg import *
-from config import *
+
 
 def choose(text=""):
     if text == "exists":
@@ -402,7 +404,7 @@ def convert(cfg):
     )
     max_workers=5
     doc=converter()
-    if cfg2.swf2pdf:
+    if not cfg2.swf2svg:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(1, cfg.p_count + 1):
                 executor.submit(doc.swf2pdf, i)

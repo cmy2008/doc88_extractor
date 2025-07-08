@@ -10,3 +10,4 @@ test/
 fonts/
 .vscode/launch.json
 logs/
+config.json
