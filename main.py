@@ -31,6 +31,7 @@ import re
 import zipfile
 import shutil
 import cairosvg
+from retrying import retry
 from concurrent.futures import ThreadPoolExecutor
 from pypdf import PdfWriter
 from gen_cfg import *
@@ -127,14 +128,12 @@ def get_cfg(url: str):
     c = b.span()
     return a[c[0] + 13 : c[1] - 3]
 
-
+@retry(stop_max_attempt_number=3,wait_fixed=500)
 def download(url: str, filepath: str):
-    response = requests.get(url)
     with open(filepath, "wb") as f:
-        f.write(response.content)
+        f.write(requests.get(url).content)
         f.close()
     return filepath
-
 
 def extractzip(file_path: str, topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
@@ -227,9 +226,9 @@ def main():
         print(err)
         return False
 class downloader():
-    def __init__(self,cfg) -> None:
+    def __init__(self,cfg: gen_cfg) -> None:
         self.cfg=cfg
-        self.downloaded=False
+        self.downloaded=True
         self.progressfile=cfg2.dir_path + "progress.json"
         if os.path.isfile(self.progressfile):
             self.read_progress()
@@ -250,7 +249,7 @@ class downloader():
             file.write(json.dumps(self.progress))
             file.close()
 
-    def pk(self,i):
+    def pk(self,i: int):
         print(f"Downloading PK {i}...")
         url = self.cfg.pk(i)
         file_path = cfg2.dir_path + url[25:]
@@ -265,7 +264,7 @@ class downloader():
             logw(f"Download PK {i} error: {e}")
             self.downloaded=False
 
-    def ph(self,i):
+    def ph(self,i: int):
         print(f"Downloading page {i}...")
         url = self.cfg.ph(i)
         file_path = cfg2.dir_path + url[25:]
@@ -280,9 +279,9 @@ class downloader():
             logw(f"Download PH {i} error: {e}")
             self.downloaded=False
 
-    def makeswf(self, i):
+    def makeswf(self, i: int):
         try:
-            level_num = self.cfg.page_levels[i]
+            level_num = self.cfg.pk_num(i)
             compressor.make(
                 cfg2.dir_path + self.cfg.pk(level_num)[25:],
                 cfg2.dir_path + self.cfg.ph(i)[25:],
@@ -293,7 +292,7 @@ class downloader():
             logw(str(e))
             self.cfg.p_count -= 1
 
-def get_swf(cfg):
+def get_swf(cfg: gen_cfg):
     max_workers=10
     down=downloader(cfg)
     print("Downloading PK...")
@@ -304,6 +303,8 @@ def get_swf(cfg):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.ph, i)
+    if not down.downloaded:
+        raise Exception("Downlaod error")
     print("Making pages...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):

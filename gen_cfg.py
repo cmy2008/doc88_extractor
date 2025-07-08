@@ -14,11 +14,6 @@ class gen_cfg:
         self.p_doc_format=config['p_doc_format']
         self.pageids=decode(self.pageInfo).split(",")
         self.p_count=len(self.pageids)
-        self.page_levels = {}
-        for idx, pageid in enumerate(self.pageids):
-            parts = pageid.split('-')
-            self.page_levels[idx+1] = int(parts[0])
-        
         if more:
             self.get_more()
 
@@ -29,14 +24,19 @@ class gen_cfg:
     def pk(self, page: int)-> str:
         headnums=self.headerInfo.replace('"',"").split(',')
         return self.ebt_host + "/getebt-" + encode(f"{page}-0-{headnums[page-1]}-{self.p_swf}",key2) + ".ebt"
-        
+    
+    def pk_num(self, page: int)-> int:
+        pageid = self.pageids[page - 1].split("-")
+        return int(pageid[0])
+    
     def ph(self,page: int)-> str:
         pageid = self.pageids[page - 1].split("-")
-        level_num = self.page_levels[page]
-        return self.ebt_host + "/getebt-" + encode(
-            f"{level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}", key2
-        ) + ".ebt"
-    
+        self.level_num = int(pageid[0])
+        return self.ebt_host + "/getebt-" + encode(f"{self.level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}",key2) + ".ebt"
+
+# getebt-level_num-offset-filesize-p_swf-page-p_code
+# ebt文件的编号，offset为前面文件大小的总和，filesize为该文件的大小，文件排序如下：头文件1,页文件1...头文件2,页文件51...
+# get_more 尝试从隐藏文档中提取额外页
     def get_more(self)-> None:
         ids=self.pageids
         next=int(ids[0].split("-")[3])
