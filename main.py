@@ -55,6 +55,7 @@ def choose(text=""):
     else:
         return False
 
+
 def logw(t: str):
         log='[' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + ']: ' + t + '\n'
         log_dir='logs/'
@@ -63,6 +64,7 @@ def logw(t: str):
             os.mkdir(log_dir)
         with open(dirc, 'a') as file:
             file.write(log)
+
 
 def check_ffdec():
     ffdec_url = "https://ghproxy.cn/https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version24.0.1/ffdec_24.0.1.zip"
@@ -130,12 +132,14 @@ def get_cfg(url: str):
     c = b.span()
     return a[c[0] + 13 : c[1] - 3]
 
+
 @retry(stop_max_attempt_number=3,wait_fixed=500)
 def download(url: str, filepath: str):
     with open(filepath, "wb") as f:
         f.write(requests.get(url).content)
         f.close()
     return filepath
+
 
 def extractzip(file_path: str, topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
@@ -227,6 +231,8 @@ def main():
     except Exception as err:
         print(err)
         return False
+
+
 class downloader():
     def __init__(self,cfg: gen_cfg) -> None:
         self.cfg=cfg
@@ -252,8 +258,8 @@ class downloader():
             file.close()
 
     def pk(self,i: int):
-        print(f"Downloading PK {i}...")
         url = self.cfg.pk(i)
+        print(f"Downloading PK {i} {url}")
         file_path = cfg2.dir_path + url[25:]
         if i in self.progress["pk"]:
             print("Using Cache...")
@@ -267,8 +273,8 @@ class downloader():
             self.downloaded=False
 
     def ph(self,i: int):
-        print(f"Downloading page {i}...")
         url = self.cfg.ph(i)
+        print(f"Downloading page {i}: {url}")
         file_path = cfg2.dir_path + url[25:]
         if i in self.progress["ph"]:
             print("Using Cache...")
@@ -293,6 +299,7 @@ class downloader():
             print(f"Can't decompress page {i}! Skipping...")
             logw(str(e))
             self.cfg.p_count -= 1
+
 
 def get_swf(cfg: gen_cfg):
     max_workers=10
@@ -396,6 +403,7 @@ class converter():
     def makepdf(self):
         for i in self.pdflist:
             self.pdf = append_pdf(self.pdf, cfg2.pdf_path + str(i) + ".pdf")
+
 
 def convert(cfg):
     print("Now start converting...")
