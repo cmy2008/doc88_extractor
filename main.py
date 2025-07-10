@@ -116,7 +116,7 @@ def get_request(url: str):
         "Content-Type": "text/html; charset=utf-8",
         "Referer": "https://www.doc88.com/",
     }
-    return requests.get(url, headers=headers, proxies=None)
+    return requests.get(url, headers=headers)
 
 
 def get_cfg(url: str):
@@ -176,16 +176,7 @@ class init():
             print("")
 
 
-def main():
-    try:
-        url = input("请输入网址：")
-    except KeyboardInterrupt:
-        exit()
-    try:
-        encoded_str = get_cfg(url)
-    except Exception as Err:
-        print(Err)
-        return False
+def main(encoded_str):
     try:
         config = json.loads(decode(encoded_str))
     except json.decoder.JSONDecodeError:
@@ -257,23 +248,9 @@ class downloader():
             file.write(json.dumps(self.progress))
             file.close()
 
-    def pk(self,i: int):
-        url = self.cfg.pk(i)
-        print(f"Downloading PK {i}: \n{url}")
-        file_path = cfg2.dir_path + url[25:]
-        if i in self.progress["pk"]:
-            print("Using Cache...")
-            return None
-        try:
-            download(url, file_path)
-            self.save_progress("pk",i)
-        except Exception as e:
-            logw(f"Download PK {i} error: {e}")
-            self.downloaded=False
-
     def ph(self,i: int):
         url = self.cfg.ph(i)
-        print(f"Downloading page {i}: \n{url}")
+        print(f"Downloading PH {i}: \n{url}")
         file_path = cfg2.dir_path + url[25:]
         if i in self.progress["ph"]:
             print("Using Cache...")
@@ -282,15 +259,29 @@ class downloader():
             download(url, file_path)
             self.save_progress("ph",i)
         except Exception as e:
+            logw(f"Download PH {i} error: {e}")
+            self.downloaded=False
+
+    def pk(self,i: int):
+        url = self.cfg.pk(i)
+        print(f"Downloading page {i}: \n{url}")
+        file_path = cfg2.dir_path + url[25:]
+        if i in self.progress["pk"]:
+            print("Using Cache...")
+            return None
+        try:
+            download(url, file_path)
+            self.save_progress("pk",i)
+        except Exception as e:
             logw(f"Download page {i} error: {e}")
             self.downloaded=False
 
     def makeswf(self, i: int):
         try:
-            level_num = self.cfg.pk_num(i)
+            level_num = self.cfg.ph_num(i)
             compressor.make(
-                cfg2.dir_path + self.cfg.pk(level_num)[25:],
-                cfg2.dir_path + self.cfg.ph(i)[25:],
+                cfg2.dir_path + self.cfg.ph(level_num)[25:],
+                cfg2.dir_path + self.cfg.pk(i)[25:],
                 cfg2.swf_path + str(i) + ".swf"
             )
         except Exception as e:
@@ -302,14 +293,14 @@ class downloader():
 def get_swf(cfg: gen_cfg):
     max_workers=10
     down=downloader(cfg)
-    print("Downloading PK...")
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(1, cfg.pknum()+1):
-            executor.submit(down.pk, i)
     print("Downloading PH...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(1, cfg.p_count + 1):
+        for i in range(1, cfg.phnum()+1):
             executor.submit(down.ph, i)
+    print("Downloading PK...")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(1, cfg.p_count + 1):
+            executor.submit(down.pk, i)
     if not down.downloaded:
         raise Exception("Downlaod error")
     print("Making pages...")
@@ -434,20 +425,62 @@ def clean(cfg2):
     shutil.rmtree(cfg2.pdf_path)
     shutil.rmtree(cfg2.svg_path)
 
+class mode():
+    def __init__(self) -> None:
+        self.encode=""
+    
+    def url(self):
+        try:
+            url = input("请输入网址：")
+        except KeyboardInterrupt:
+            exit()
+        try:
+            return main(get_cfg(url))
+        except Exception as Err:
+            print(Err)
+            return False
+    
+    def pcode(self):
+        try:
+            p_code = input("请输入id：")
+        except KeyboardInterrupt:
+            exit()
+        try:
+            return main(get_cfg(f"https://www.doc88.com/p-{p_code}.html"))
+        except Exception as Err:
+            print(Err)
+            return False
+
+    def data(self):
+        try:
+            data = input("请输入init_data：")
+        except KeyboardInterrupt:
+            exit()
+        try:
+            return main(data)
+        except Exception as Err:
+            print(Err)
+            return False
 
 if __name__ == "__main__":
     check_ffdec()
     a = sys.argv
+    user=mode()
     if len(a) == 1:
-        while True:
-            if main() and cfg2.clean:
-                try:
-                    clean(cfg2)
-                except NameError:
-                    pass
-                if choose():
-                    pass
-                else:
-                    exit()
-            else:
+        exe=user.url
+    elif "-p" in a:
+        exe=user.pcode
+    elif "-d" in a:
+        exe=user.data
+    while True:
+        if exe() and cfg2.clean:
+            try:
+                clean(cfg2)
+            except NameError:
                 pass
+            if choose():
+                pass
+            else:
+                exit()
+        else:
+            pass
