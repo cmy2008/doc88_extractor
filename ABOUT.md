@@ -7,7 +7,8 @@
 ## 尝试提取文件
 
 首先肯定是抓包了，发现在滚动时会不断地出现这些文件，说明是我们要的文档数据文件：
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwiwmvqjhhqpnhlwhuhkulmnlkhhihhh)
+
+![](https://github.com/user-attachments/assets/acefc55b-33e6-47c1-9d4e-e4fc77d7d000)
 
 看起来文件名像base64，但解码不出来
 
@@ -15,11 +16,12 @@
 
 再看看js文件，从中找出了生成链接的代码：
 
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixhhmkhhqpnhlwhuhkuppqxihhihhh)
+![](https://github.com/user-attachments/assets/c40e43ff-4589-4e2d-8bbd-0373e2536c84)
 
 很明显链接的一部分经过了某种方式加密，循着这个加密函数，从中找到了像是密钥的东西：
 
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixhhmkhhqpnhlwhuhkvmwpjhphihhh)
+![](https://github.com/user-attachments/assets/6337471e-33ae-407f-a843-6fab991bd4bc)
+
 很像base64的码表，查找资料后发现这就是base64的变体
 
 把这些代码完整地剥离下来，于是我们就得到了加密程序，至于解密，其实在生成相关代码中出现过了，直接用就行
@@ -40,29 +42,34 @@
 
 前几个像是日期，然后最前面的就完全不知道是什么
 
-再仔细看看js文件，发现文件id构造过程在这里：
+再仔细看看js文件，发现文件id的源头在这里：
 
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwiwhhnohhqpnhlwhuhkvixnqihhihhh)
+![](https://github.com/user-attachments/assets/f70cc48f-cbb1-4777-aa02-79981250003e)
 
 我们看一下Config是什么内容：
 
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwiwhhnohhqpnhlwhuhkvkjuuuphihhh)
+![](https://github.com/user-attachments/assets/f5f82bf2-d3f6-4efb-a1fa-34a9bc6e99ea)
 
 没错，就是文档的基本信息，那个像是日期部分也都在p_swf里
 
-看起来pageInfo保存着文档的各个编号，尝试用之前剥离下来的程序解码，结果是乱码
+看起来pageInfo保存着文档页面的各个id，尝试用之前剥离下来的程序解码，结果是乱码
 
 再转回来看密钥部分，发现下面还有一个差不多的密钥，我们替换一下，解码成功：
 
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwiwhhnohhqpnhlwhuhkvoziiwphihhh)
-答案出来了，就是在这里储存的编号
+![](https://github.com/user-attachments/assets/795cf9ef-5d65-4c42-8809-5e12bf2479d2)
+
+答案出来了，就是在这里储存的id
 
 那么，Config又是从哪来的呢？
 
 于是我在一堆js文件里找，发现怎么找也找不到，正当一筹莫展的时候，偶然间在网页中撇到了一长串的代码：
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixiuyyhhqpnhlwhuhlzminquhhihhh)
+
+![](https://github.com/user-attachments/assets/fbebb770-0fbd-42f2-a701-8e4208473cf0)
+
 看起来m_main.init的内容很像是base64，极有可能和之前的加密一样，我们直接用解工具解出来：
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixiuyyhhqpnhlwhuhniukplkphihhh)
+
+![](https://github.com/user-attachments/assets/da11e9d6-c3e1-47b2-bbc4-8cea094cb58b)
+
 没错，这就是Config的内容
 
 到现在，我们就可以做出下载流程了：
@@ -81,11 +88,17 @@
 
 最后在网上查找时，不知道从哪找到个度盘链接，然后就下到了原作者做的工具包，现在再去找已经找不到了，也许已经成为一个失传媒体了，于是传到互联网博物馆了：[dda_doc88_cracker](https://archive.org/details/dda_doc88_cracker)
 不过总之，还是拿到了解密工具，我们运行下：
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixiuyyhhqpnhlwhuhnjinnplphihhh)
+
+![](https://github.com/user-attachments/assets/0182561f-5d23-4f91-8cb4-dce18d508b57)
+
 很明显，要先选择PK文件，对吗？显示检测到YBD头部，看起来很对，再选择PH文件，也检测到了，再让我们保存文件，就这样成功了吗？不对，转出来的文件没有任何内容：
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixizikhhqpnhlwhuhnmwhuihphihhh)
+
+![](https://github.com/user-attachments/assets/a22e700e-7494-4706-93e7-b189e5e45999)
+
 再换个顺序试试？
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixiuyyhhqpnhlwhuhnmwvlzuphihhh)
+
+![](https://github.com/user-attachments/assets/1a3b2b8d-d434-4a48-bede-a073eea850b5)
+
 成功了，原来是程序本身的BUG，既然能提取，那么就放心了，直接右键打印到PDF，便可导出PDF文件，很简单不是吗？
 
 但是如果一个个都这么搞的话，那就太麻烦了，于是我着手编写解密程序，我用的是python
@@ -138,13 +151,14 @@ AI把GUI换成CLI操作了，于是用这个解密程序输入PK文件，PH文�
 不过后来，我又发现ffdec里的高级设置中的font-face功能居然可以开启文本转换，转换出来的SVG文件直接可以复制文本，但是除了有文本，问题一大堆，错位、乱码、字体消失层出不穷，甚至cairosvg遇到这种文件直接开始报错，只能转极个别页面
 
 好了，知道是ffdec问题就该反馈给这个工具的原作者，结果作者在一天之内推了5个commit，把我提到的bug都修好了，我去这神仙效率：
-![](http://pro-cos-pub-upload.cvtestatic.com/seewo-school/uwixizikhhqpnhlwhuhounqkpvphihhh
-)
-（如果有条件的话可以去打赏这个作者，毕竟我的转换器功劳最大的就是这个工具了~~，一年才被打赏几百美元也太可怜了~~）
+
+![](https://github.com/user-attachments/assets/9ec23212-ac22-4668-b642-ca729316941e)
+
+（如果有条件的话可以去打赏这个作者，毕竟我的转换器功劳最大的就是这个工具了<del>，一年才被打赏几百美元也太可怜了<del>）
 
 看到这个的时候非常震惊，可是当时还在上信息课，没法更新我的工具，只能叹为观止
 
-现在放假回来马上更新了工具，本以为只给作者发了两个我认为典型的swf文件，可能不太适用于其他页面，出乎意料的是，除了转到SVG确实会出现如作者回复所说的间隔问题，但是更令人意外的是，直接转到PDF完全没问题了，找了十几个文档，全部正常转换，全部显示正常文本（但是用edge预览时会出点渲染问题~~，所以edge就是个垃圾~~）,也能正常复制文本甚至是他们自己的文字识别贴上去的全透明文本也可以
+现在放假回来马上更新了工具，本以为只给作者发了两个我认为典型的swf文件，可能不太适用于其他页面，出乎意料的是，除了转到SVG确实会出现如作者回复所说的间隔问题，但是更令人意外的是，直接转到PDF完全没问题了，找了十几个文档，全部正常转换，全部显示正常文本（但是用edge预览时会出点渲染问题<del>，所以edge就是个垃圾<del>）,也能正常复制文本甚至是他们自己的文字识别贴上去的全透明文本也可以
 
 所以干掉了cairosvg转换方式，全面使用ffdec（其实cairosvg方案还保留着，只是作为一个备选方案在配置文件里）
 
@@ -178,7 +192,7 @@ AI把GUI换成CLI操作了，于是用这个解密程序输入PK文件，PH文�
 2-595-841-467569-3103
 2-595-841-470672-3965
 ```
-发现第一个文件层数已经定好了，根本不用去手动计算，直接根据这个数字找出对应的头文件就完事了~~（然鹅就这我修了好几个版本才弄好~~
+发现第一个文件层数已经定好了，根本不用去手动计算，直接根据这个数字找出对应的头文件就完事了<del>（然鹅就这我修了好几个版本才弄好<del>
 
 再看看其他数字的意义，595-841是固定的，而且在构造文件名时没用上，我们就把它当成第二个文档id吧
 
