@@ -7,8 +7,7 @@
 ## 尝试提取文件
 
 首先肯定是抓包了，发现在滚动时会不断地出现这些文件，说明是我们要的文档数据文件：
-
-![](https://github.com/user-attachments/assets/acefc55b-33e6-47c1-9d4e-e4fc77d7d000)
+![](https://edge.piglin.eu.org/seewo-school/uwiwmvqjhhqpnhlwhuhkulmnlkhhihhh)
 
 看起来文件名像base64，但解码不出来
 
@@ -16,11 +15,11 @@
 
 再看看js文件，从中找出了生成链接的代码：
 
-![](https://github.com/user-attachments/assets/c40e43ff-4589-4e2d-8bbd-0373e2536c84)
+![](https://edge.piglin.eu.org/seewo-school/uwixhhmkhhqpnhlwhuhkuppqxihhihhh)
 
 很明显链接的一部分经过了某种方式加密，循着这个加密函数，从中找到了像是密钥的东西：
 
-![](https://github.com/user-attachments/assets/6337471e-33ae-407f-a843-6fab991bd4bc)
+![](https://edge.piglin.eu.org/seewo-school/uwixhhmkhhqpnhlwhuhkvmwpjhphihhh)
 
 很像base64的码表，查找资料后发现这就是base64的变体
 
@@ -44,11 +43,11 @@
 
 再仔细看看js文件，发现文件id的源头在这里：
 
-![](https://github.com/user-attachments/assets/f70cc48f-cbb1-4777-aa02-79981250003e)
+![](https://edge.piglin.eu.org/seewo-school/uwiwhhnohhqpnhlwhuhkvixnqihhihhh)
 
 我们看一下Config是什么内容：
 
-![](https://github.com/user-attachments/assets/f5f82bf2-d3f6-4efb-a1fa-34a9bc6e99ea)
+![](https://edge.piglin.eu.org/seewo-school/uwiwhhnohhqpnhlwhuhkvkjuuuphihhh)
 
 没错，就是文档的基本信息，那个像是日期部分也都在p_swf里
 
@@ -56,19 +55,19 @@
 
 再转回来看密钥部分，发现下面还有一个差不多的密钥，我们替换一下，解码成功：
 
-![](https://github.com/user-attachments/assets/795cf9ef-5d65-4c42-8809-5e12bf2479d2)
+![](https://edge.piglin.eu.org/seewo-school/uwiwhhnohhqpnhlwhuhkvoziiwphihhh)
 
-答案出来了，就是在这里储存的id
+答案出来了，就是在这里储存的文件有关id
 
 那么，Config又是从哪来的呢？
 
 于是我在一堆js文件里找，发现怎么找也找不到，正当一筹莫展的时候，偶然间在网页中撇到了一长串的代码：
 
-![](https://github.com/user-attachments/assets/fbebb770-0fbd-42f2-a701-8e4208473cf0)
+![](https://edge.piglin.eu.org/seewo-school/uwixiuyyhhqpnhlwhuhlzminquhhihhh)
 
 看起来m_main.init的内容很像是base64，极有可能和之前的加密一样，我们直接用解工具解出来：
 
-![](https://github.com/user-attachments/assets/da11e9d6-c3e1-47b2-bbc4-8cea094cb58b)
+![](https://edge.piglin.eu.org/seewo-school/uwixiuyyhhqpnhlwhuhniukplkphihhh)
 
 没错，这就是Config的内容
 
@@ -86,18 +85,19 @@
 
 于是我们得知，这其实是flash实现的文档查看功能，利用头文件（PH）和页数据文件（PK）就可以合成出一个flash文件，至于如何合成，文章也给出了相应代码，可是原工具是ActionScript写的，于是我费劲周折，找出ActionScript的相关编译工具，然而最终还是因为一个兼容性问题放弃了
 
-最后在网上查找时，不知道从哪找到个度盘链接，然后就下到了原作者做的工具包，现在再去找已经找不到了，也许已经成为一个失传媒体了，于是传到互联网博物馆了：[dda_doc88_cracker](https://archive.org/details/dda_doc88_cracker)
+最后在网上查找时，不知道从哪找到个度盘链接，然后就下到了原作者做的工具包，现在再去找已经找不到了，也许已经成为一个失传媒体了，于是传到互联网博物馆了（dda_doc88_cracker），直链下载：[dda_doc88_cracker.zip](https://edge.piglin.eu.org/dda_doc88_cracker.zip)
+
 不过总之，还是拿到了解密工具，我们运行下：
 
-![](https://github.com/user-attachments/assets/0182561f-5d23-4f91-8cb4-dce18d508b57)
+![](https://edge.piglin.eu.org/seewo-school/uwixiuyyhhqpnhlwhuhnjinnplphihhh)
 
 很明显，要先选择PK文件，对吗？显示检测到YBD头部，看起来很对，再选择PH文件，也检测到了，再让我们保存文件，就这样成功了吗？不对，转出来的文件没有任何内容：
 
-![](https://github.com/user-attachments/assets/a22e700e-7494-4706-93e7-b189e5e45999)
+![](https://edge.piglin.eu.org/seewo-school/uwixizikhhqpnhlwhuhnmwhuihphihhh)
 
 再换个顺序试试？
 
-![](https://github.com/user-attachments/assets/1a3b2b8d-d434-4a48-bede-a073eea850b5)
+![](https://edge.piglin.eu.org/seewo-school/uwixiuyyhhqpnhlwhuhnmwvlzuphihhh)
 
 成功了，原来是程序本身的BUG，既然能提取，那么就放心了，直接右键打印到PDF，便可导出PDF文件，很简单不是吗？
 
@@ -152,7 +152,8 @@ AI把GUI换成CLI操作了，于是用这个解密程序输入PK文件，PH文�
 
 好了，知道是ffdec问题就该反馈给这个工具的原作者，结果作者在一天之内推了5个commit，把我提到的bug都修好了，我去这神仙效率：
 
-![](https://github.com/user-attachments/assets/9ec23212-ac22-4668-b642-ca729316941e)
+![](https://edge.piglin.eu.org/seewo-school/uwixizikhhqpnhlwhuhounqkpvphihhh
+)
 
 （如果有条件的话可以去打赏这个作者，毕竟我的转换器功劳最大的就是这个工具了<del>，一年才被打赏几百美元也太可怜了<del>）
 
