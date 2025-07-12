@@ -1,7 +1,6 @@
 from coder import *
-
 class gen_cfg:
-    def __init__(self,config: dict,more: bool = False) -> None:
+    def __init__(self,config: dict) -> None:
         self.headerInfo=config['headerInfo']
         self.p_swf=config['p_swf']
         self.ebt_host=config['ebt_host']
@@ -12,18 +11,16 @@ class gen_cfg:
         self.p_countinfo=config['pageCount']
         self.p_download=config['p_download']
         self.p_doc_format=config['p_doc_format']
+        self.p_pagecount=config['p_pagecount']
         self.pageids=decode(self.pageInfo).split(",")
         self.p_count=len(self.pageids)
-        if more:
-            self.get_more()
+        self.headnums=self.headerInfo.replace('"',"").split(',')
 
     def phnum(self)-> int:
-        headnums=self.headerInfo.replace('"',"").split(',')
-        return len(headnums)
+        return len(self.headnums)
     
     def ph(self, level: int)-> str:
-        headnums=self.headerInfo.replace('"',"").split(',')
-        return self.ebt_host + "/getebt-" + encode(f"{level}-0-{headnums[level-1]}-{self.p_swf}",key2) + ".ebt"
+        return self.ebt_host + "/getebt-" + encode(f"{level}-0-{self.headnums[level-1]}-{self.p_swf}",key2) + ".ebt"
     
     def ph_num(self, page: int)-> int:
         pageid = self.pageids[page - 1].split("-")
@@ -34,22 +31,3 @@ class gen_cfg:
         self.level_num = int(pageid[0])
         return self.ebt_host + "/getebt-" + encode(f"{self.level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}",key2) + ".ebt"
 
-# getebt-level_num-offset-filesize-p_swf-page-p_code
-# ebt文件的编号，level_num为层数编号，offset为该层前面文件大小的总和，filesize为该文件的大小，文件排序如下：头文件1,页文件1...重置计数...头文件2,页文件51...
-# get_more 尝试从隐藏文档中提取额外页
-    def get_more(self)-> None:
-        ids=self.pageids
-        next=int(ids[0].split("-")[3])
-        more=[]
-        for i in ids + [ids[self.p_count-1]]:
-            pageid=i.split("-")
-            if next == int(pageid[3]):
-                pre=pageid
-                next = next + int(pageid[4])
-            else:
-                self.p_count=self.p_count+1
-                pageid[3]=str(next)
-                more.append('-'.join(pre))
-                pre=pageid
-                next=int(pageid[3])+int(pageid[4])
-        self.pageids=self.pageids+more

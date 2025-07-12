@@ -1,6 +1,9 @@
 *.pyc
 *.swp
 *.swo
+*.ebt
+*.txt
+*.swf
 build/
 dist/
 __pycache__/

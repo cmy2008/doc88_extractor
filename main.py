@@ -29,22 +29,22 @@ import sys
 import time
 import json
 import requests
-import compressor
 import re
 import zipfile
 import shutil
+from compressor import *
 from retrying import retry
 from concurrent.futures import ThreadPoolExecutor
 from pypdf import PdfWriter
 from gen_cfg import *
-
+from get_more import *
 
 def choose(text=""):
     if text == "exists":
         text = "The directory already exists!\nContinue? (Y/n): "
     elif text == "down":
         text = "是否下载，否则继续提取预览文档？ (Y/n): "
-    else:
+    elif text == "":
         text = "Continue? (Y/n): "
     try:
         user_input = input(text)
@@ -176,7 +176,7 @@ class init():
             print("")
 
 
-def main(encoded_str):
+def main(encoded_str,more=False):
     try:
         config = json.loads(decode(encoded_str))
     except json.decoder.JSONDecodeError:
@@ -185,12 +185,15 @@ def main(encoded_str):
     except (ValueError, UnicodeDecodeError):
         print("Can't read! Maybe keys were changed?")
         return False
-    cfg = gen_cfg(config,more=False)
-    print("文档名：" + cfg.p_name)
-    print("上传日期：" + cfg.p_date)
-    print("页数：" + str(cfg.p_countinfo))
-    if int(cfg.p_countinfo) != cfg.p_count:
-        print("实际页数：" + str(cfg.p_count))
+    cfg = gen_cfg(config)
+    print(f"文档名：{cfg.p_name}")
+    print(f"上传日期：{cfg.p_date}")
+    print(f"页数：{cfg.p_pagecount}")
+    if int(cfg.p_pagecount) != cfg.p_count:
+        more=True
+        print(f"可预览页数：{cfg.p_countinfo}")
+        print(f"可直接获取页数：{cfg.p_count}")
+        print(f"可能有额外页面（需扫描）！")
     if cfg.p_download == "1":
         print("该文档为免费文档，可直接下载！")
         if choose("down"):
@@ -215,6 +218,18 @@ def main(encoded_str):
         else:
             print("Continuing...")
     init(config)
+    if more:
+        if choose("即将通过扫描获取页面，是否继续？ (Y/n): "):
+            print("尝试通过扫描获取页面...")
+            get=get_more(cfg,cfg2.dir_path+"cache.ebt")
+            for i in range(1,cfg.phnum()+1):
+                get.start(i)
+            cfg.pageids=get.newpageids
+            cfg.p_count=len(cfg.pageids)
+            print(f"成功扫描页数：{cfg.p_count}")
+            time.sleep(2)
+        else:
+            print("普通下载模式...")
     try:
         get_swf(cfg)
         convert(cfg)
@@ -279,7 +294,7 @@ class downloader():
     def makeswf(self, i: int):
         try:
             level_num = self.cfg.ph_num(i)
-            compressor.make(
+            make_swf(
                 cfg2.dir_path + self.cfg.ph(level_num)[25:],
                 cfg2.dir_path + self.cfg.pk(i)[25:],
                 cfg2.swf_path + str(i) + ".swf"
