@@ -33,9 +33,9 @@ class get_more():
         if response.status_code == 200:
             with open(self.file, 'wb') as file:
                 size=0
-                next=0
+                offset=0
                 status=False
-                setnext=0
+                setoffset=0
                 try:
                     for chunk in response.iter_content(chunk_size=1):
                         if chunk:
@@ -46,17 +46,17 @@ class get_more():
                                     status=True
                                 elif chunk == struct.pack('B', self.header[1]):
                                     if status==True:
-                                        if size-33-next < scan_range:
-                                            print(f"pass:{size}-{size-33-next}")
+                                        if size-33-offset < scan_range:
+                                            print(f"pass:{size}-{size-33-offset}")
                                             status=False
                                             pass
                                         else:
-                                            br=f"{headsize+next}-{size-33-next}"
+                                            br=f"{headsize+offset}-{size-33-offset}"
                                             if self.test(headsize,br):
-                                                # setnext=1
+                                                # setoffset=1
                                                 print(f"found:{br}")
                                                 ids.append(br)
-                                                next=size-33
+                                                offset=size-33
                                             else:
                                                 print(f"zpass:{br}")
                                                 status=False
@@ -65,18 +65,18 @@ class get_more():
                                         status=False
                                 else:
                                     status=False
-                                # if setnext == 1:
-                                #     setnext=2
-                                # elif setnext==2:
-                                #     setnext=0
+                                # if setoffset == 1:
+                                #     setoffset=2
+                                # elif setoffset==2:
+                                #     setoffset=0
                                 #     print(chunk.hex())
                                 #     self.heads.append(chunk.hex())
                             size+=file.write(chunk)
                             file.flush()
                 except requests.exceptions.ChunkedEncodingError:
                     pass
-                ids.append(f"{headsize+next}-{size-next}")
-                print(f"finish:{headsize+next}-{size-next}")
+                ids.append(f"{headsize+offset}-{size-offset}")
+                print(f"finish:{headsize+offset}-{size-offset}")
                 print(f"total page:{len(ids)}")
                 # count_dict = Counter(self.heads)
                 # print(count_dict)

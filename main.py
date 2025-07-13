@@ -468,8 +468,11 @@ class mode():
             url = input("请输入网址：")
         except KeyboardInterrupt:
             exit()
-        main(get_cfg(url).data)
-        return False
+        try:
+            return main(get_cfg(url).data)
+        except Exception as Err:
+            print(Err)
+            return False
     
     def pcode(self):
         try:
