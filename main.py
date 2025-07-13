@@ -119,18 +119,37 @@ def get_request(url: str):
     return requests.get(url, headers=headers)
 
 
-def get_cfg(url: str):
-    if url.find("doc88.com/p-") == -1:
-        raise Exception("Invalid URL!")
-    request = get_request(url)
-    if request.status_code == 404:
-        raise Exception("404 Not Found!")
-    a = str(request.text)
-    b = re.search(r"m_main.init\(\".*\"\);", a)
-    if b == None:
-        raise Exception("Config data not found! May be deleted?")
-    c = b.span()
-    return a[c[0] + 13 : c[1] - 3]
+class get_cfg():
+    def __init__(self,url: str) -> None:
+        if url.find("doc88.com/p-")  == -1 and url.find("doc88.piglin.eu.org/p-") == -1:
+            raise Exception("Invalid URL!")
+        self.url=url
+        self.content=""
+        self.data=""
+        self.sta=0
+        if not self.get_main():
+            if choose("Do you want to use CDN?(Y/n): "):
+                self.__init__("https://doc88.piglin.eu.org"+url[url.find("doc88.com/")+9:])
+                return None
+        return None
+    def req(self):
+        request = get_request(self.url)
+        if request.status_code == 404:
+            self.sta=1
+            raise Exception("404 Not found!")
+        self.content=request.text
+
+    def get_main(self):
+        self.req()
+        data = re.search(r"m_main.init\(\".*\"\);", self.content)
+        if data == None:
+            if re.search("网络环境安全验证",self.content):
+                print("WAF detected!")
+                return False
+            raise Exception("Config data not found! May be deleted?")
+        c = data.span()
+        self.data = self.content[c[0] + 13 : c[1] - 3]
+        return True
 
 
 @retry(stop_max_attempt_number=3,wait_fixed=500)
@@ -317,7 +336,7 @@ def get_swf(cfg: gen_cfg):
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.pk, i)
     if not down.downloaded:
-        raise Exception("Downlaod error")
+        print("Downlaod error")
     print("Making pages...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):
@@ -449,11 +468,8 @@ class mode():
             url = input("请输入网址：")
         except KeyboardInterrupt:
             exit()
-        try:
-            return main(get_cfg(url))
-        except Exception as Err:
-            print(Err)
-            return False
+        main(get_cfg(url).data)
+        return False
     
     def pcode(self):
         try:
