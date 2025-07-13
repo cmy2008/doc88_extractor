@@ -26,45 +26,15 @@ if cfg2.swf2svg:
             print("GTK runtime not found, maybe not install?")
     import cairosvg
 import sys
-import time
 import json
-import requests
 import re
-import zipfile
 import shutil
 from compressor import *
-from retrying import retry
 from concurrent.futures import ThreadPoolExecutor
 from pypdf import PdfWriter
 from gen_cfg import *
 from get_more import *
-
-def choose(text=""):
-    if text == "exists":
-        text = "The directory already exists!\nContinue? (Y/n): "
-    elif text == "down":
-        text = "是否下载，否则继续提取预览文档？ (Y/n): "
-    elif text == "":
-        text = "Continue? (Y/n): "
-    try:
-        user_input = input(text)
-    except KeyboardInterrupt:
-        exit()
-    if user_input == "Y" or user_input == "y":
-        return True
-    else:
-        return False
-
-
-def logw(t: str):
-        log='[' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + ']: ' + t + '\n'
-        log_dir='logs/'
-        dirc=log_dir + time.strftime('%Y-%m-%d', time.localtime()) + '.log'
-        if not os.path.isdir(log_dir):
-            os.mkdir(log_dir)
-        with open(dirc, 'a') as file:
-            file.write(log)
-
+from utils import *
 
 def check_ffdec():
     ffdec_url = "https://ghproxy.cn/https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version24.0.1/ffdec_24.0.1.zip"
@@ -105,20 +75,6 @@ def check_ffdec():
         input()
         exit()
 
-
-def r(str):
-    return '"' + str + '"'
-
-
-def get_request(url: str):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
-        "Content-Type": "text/html; charset=utf-8",
-        "Referer": "https://www.doc88.com/",
-    }
-    return requests.get(url, headers=headers)
-
-
 class get_cfg():
     def __init__(self,url: str) -> None:
         if url.find("doc88.com/p-")  == -1 and url.find("doc88.piglin.eu.org/p-") == -1:
@@ -150,21 +106,6 @@ class get_cfg():
         c = data.span()
         self.data = self.content[c[0] + 13 : c[1] - 3]
         return True
-
-
-@retry(stop_max_attempt_number=3,wait_fixed=500)
-def download(url: str, filepath: str):
-    with open(filepath, "wb") as f:
-        f.write(requests.get(url).content)
-        f.close()
-    return filepath
-
-
-def extractzip(file_path: str, topath: str):
-    with zipfile.ZipFile(file_path, "r") as f:
-        f.extractall(topath)
-        f.close
-
 
 def append_pdf(pdf: PdfWriter, file: str):
     with open(file, "rb") as f:
@@ -240,17 +181,21 @@ def main(encoded_str,more=False):
     if more:
         if choose("即将通过扫描获取页面，是否继续？ (Y/n): "):
             print("尝试通过扫描获取页面...")
-            get=get_more(cfg,cfg2.dir_path+"cache.ebt")
+            newpageids=[]
+            cfg.p_count=0
             for i in range(1,cfg.phnum()+1):
-                get.start(i)
-            cfg.pageids=get.newpageids
-            cfg.p_count=len(cfg.pageids)
+                get=get_more(cfg,i,cfg2.dir_path,cfg.p_count)
+                get.start()
+                newpageids.append(get.newpageids)
+                cfg.p_count+=len(get.newpageids)
+                del get
             print(f"成功扫描页数：{cfg.p_count}")
             time.sleep(2)
         else:
             print("普通下载模式...")
     try:
-        get_swf(cfg)
+        if not more:
+            get_swf(cfg)
         convert(cfg)
         return True
     except Exception as err:
@@ -284,13 +229,13 @@ class downloader():
 
     def ph(self,i: int):
         url = self.cfg.ph(i)
-        print(f"Downloading PH {i}: \n{url}")
-        file_path = cfg2.dir_path + url[25:]
+        print(f"Downloading PH {i}: \n{url.url}")
+        file_path = cfg2.dir_path + url.name
         if i in self.progress["ph"]:
             print("Using Cache...")
             return None
         try:
-            download(url, file_path)
+            download(url.url, file_path)
             self.save_progress("ph",i)
         except Exception as e:
             logw(f"Download PH {i} error: {e}")
@@ -298,13 +243,13 @@ class downloader():
 
     def pk(self,i: int):
         url = self.cfg.pk(i)
-        print(f"Downloading page {i}: \n{url}")
-        file_path = cfg2.dir_path + url[25:]
+        print(f"Downloading page {i}: \n{url.url}")
+        file_path = cfg2.dir_path + url.name
         if i in self.progress["pk"]:
             print("Using Cache...")
             return None
         try:
-            download(url, file_path)
+            download(url.url, file_path)
             self.save_progress("pk",i)
         except Exception as e:
             logw(f"Download page {i} error: {e}")
@@ -314,8 +259,8 @@ class downloader():
         try:
             level_num = self.cfg.ph_num(i)
             make_swf(
-                cfg2.dir_path + self.cfg.ph(level_num)[25:],
-                cfg2.dir_path + self.cfg.pk(i)[25:],
+                cfg2.dir_path + self.cfg.ph(level_num).name,
+                cfg2.dir_path + self.cfg.pk(i).name,
                 cfg2.swf_path + str(i) + ".swf"
             )
         except Exception as e:
@@ -469,7 +414,7 @@ class mode():
         except KeyboardInterrupt:
             exit()
         try:
-            return main(get_cfg(url).data)
+            return main(get_cfg(url).data,True)
         except Exception as Err:
             print(Err)
             return False
@@ -480,7 +425,7 @@ class mode():
         except KeyboardInterrupt:
             exit()
         try:
-            return main(get_cfg(f"https://www.doc88.com/p-{p_code}.html"))
+            return main(get_cfg(f"https://www.doc88.com/p-{p_code}.html").data)
         except Exception as Err:
             print(Err)
             return False

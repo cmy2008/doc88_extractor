@@ -1,6 +1,6 @@
 import struct
 import zlib
-
+from utils import *
 class Compressor:
     def __init__(self):
         return None
@@ -13,8 +13,7 @@ class Compressor:
         ph = self.decompressEBT_PH(self.load(file_EBT))
         pk = self.decompressEBT_PK(self.load(file_EBT_PK))
         swf = self.makeup(ph,pk)
-        with open(path, 'wb') as f:
-            f.write(swf)
+        write_file(swf,path)
 
     def makeup(self, ebt_ph, ebt_pk):
         buff = bytearray()
