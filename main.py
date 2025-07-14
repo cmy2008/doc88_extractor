@@ -145,12 +145,14 @@ def main(encoded_str,more=False):
     except (ValueError, UnicodeDecodeError):
         print("Can't read! Maybe keys were changed?")
         return False
+    init(config)
     cfg = gen_cfg(config)
     if os.path.exists(f"{cfg2.dir_path}index.json"):
         cfg = gen_cfg(json.loads(read_file(f"{cfg2.dir_path}index.json")))
     print(f"文档名：{cfg.p_name}")
     print(f"上传日期：{cfg.p_date}")
     print(f"页数：{cfg.p_pagecount}")
+    time.sleep(1)
     if int(cfg.p_pagecount) != cfg.p_count:
         more=True
         print(f"可预览页数：{cfg.p_countinfo}")
@@ -179,9 +181,8 @@ def main(encoded_str,more=False):
                 logw("Downlaod error: " + str(err))
         else:
             print("Continuing...")
-    init(config)
     if more:
-        if choose("即将通过扫描获取页面，是否继续？ (Y/n): "):
+        if choose("即将通过扫描获取页面，是否继续（否则正常下载）？ (Y/n): "):
             print("尝试通过扫描获取页面...")
             newpageids=[]
             cfg.p_count=0
@@ -196,6 +197,7 @@ def main(encoded_str,more=False):
             config['p_count']=cfg.p_count
             write_file(bytes(json.dumps(config),encoding="utf-8"),cfg2.dir_path + "index.json")
             print(f"成功扫描页数：{cfg.p_count}")
+            del newpageids
             time.sleep(2)
         else:
             print("普通下载模式...")
@@ -204,6 +206,7 @@ def main(encoded_str,more=False):
         if not more:
             get_swf(cfg)
         convert(cfg)
+        del cfg
         return True
     except Exception as err:
         print(err)
