@@ -414,7 +414,7 @@ class mode():
         except KeyboardInterrupt:
             exit()
         try:
-            return main(get_cfg(url).data,False)
+            return main(get_cfg(url).data,cfg2.get_more)
         except Exception as Err:
             print(Err)
             return False
@@ -425,7 +425,7 @@ class mode():
         except KeyboardInterrupt:
             exit()
         try:
-            return main(get_cfg(f"https://www.doc88.com/p-{p_code}.html").data)
+            return main(get_cfg(f"https://www.doc88.com/p-{p_code}.html").data,cfg2.get_more)
         except Exception as Err:
             print(Err)
             return False
@@ -436,7 +436,7 @@ class mode():
         except KeyboardInterrupt:
             exit()
         try:
-            return main(data)
+            return main(data,cfg2.get_more)
         except Exception as Err:
             print(Err)
             return False

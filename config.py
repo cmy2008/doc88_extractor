@@ -18,6 +18,7 @@ class Config:
         self.swf2svg = config_data["swf2svg"]
         self.svgfontface = config_data["svgfontface"]
         self.clean = config_data["clean"]
+        self.get_more = config_data["get_more"]
 
     def gen(self):
         default_config = {
@@ -27,7 +28,8 @@ class Config:
             "o_svg_path": "svg/",
             "swf2svg": False,
             "svgfontface": False,
-            "clean": True
+            "clean": True,
+            "get_more": False
         }
         
         with open(self.config_path, 'w') as f:
