@@ -40,7 +40,12 @@ def get_request(url: str):
 def write_file(data,path):
     with open(path, 'wb') as f:
         f.write(data)
-        f.close
+        f.close()
+
+def read_file(path):
+    with open(path, "r") as file:
+        read = file.read()
+        return read
 
 @retry(stop_max_attempt_number=3,wait_fixed=500)
 def download(url: str, filepath: str):

@@ -126,8 +126,8 @@ class init():
                 pass
             else:
                 exit()
-        with open(cfg2.dir_path + "index.json", "w") as file:
-            file.write(json.dumps(config))
+        if not os.path.exists(f"{cfg2.dir_path}index.json"):
+            write_file(bytes(json.dumps(config),encoding="utf-8"),cfg2.dir_path + "index.json")
         try:
             os.makedirs(cfg2.swf_path)
             os.makedirs(cfg2.svg_path)
@@ -146,6 +146,8 @@ def main(encoded_str,more=False):
         print("Can't read! Maybe keys were changed?")
         return False
     cfg = gen_cfg(config)
+    if os.path.exists(f"{cfg2.dir_path}index.json"):
+        cfg = gen_cfg(json.loads(read_file(f"{cfg2.dir_path}index.json")))
     print(f"文档名：{cfg.p_name}")
     print(f"上传日期：{cfg.p_date}")
     print(f"页数：{cfg.p_pagecount}")
@@ -186,13 +188,18 @@ def main(encoded_str,more=False):
             for i in range(1,cfg.phnum()+1):
                 get=get_more(cfg,i,cfg2.dir_path,cfg.p_count)
                 get.start()
-                newpageids.append(get.newpageids)
+                newpageids+=get.newpageids
                 cfg.p_count+=len(get.newpageids)
                 del get
+            cfg.pageids=newpageids
+            config['pageInfo']=encode(','.join(newpageids))
+            config['p_count']=cfg.p_count
+            write_file(bytes(json.dumps(config),encoding="utf-8"),cfg2.dir_path + "index.json")
             print(f"成功扫描页数：{cfg.p_count}")
             time.sleep(2)
         else:
             print("普通下载模式...")
+            more=False
     try:
         if not more:
             get_swf(cfg)
@@ -217,9 +224,7 @@ class downloader():
             }
     
     def read_progress(self):
-        with open(self.progressfile, "r") as file:
-            self.progress = json.loads(file.read())
-            file.close()
+        self.progress = json.loads(read_file(self.progressfile))
 
     def save_progress(self,type: str, page: int):
         self.progress[type].append(page)
