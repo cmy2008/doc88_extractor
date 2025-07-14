@@ -414,7 +414,7 @@ class mode():
         except KeyboardInterrupt:
             exit()
         try:
-            return main(get_cfg(url).data,True)
+            return main(get_cfg(url).data,False)
         except Exception as Err:
             print(Err)
             return False
