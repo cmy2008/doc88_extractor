@@ -412,6 +412,11 @@ def clean(cfg2):
     shutil.rmtree(ospath(cfg2.swf_path))
     shutil.rmtree(ospath(cfg2.pdf_path))
     shutil.rmtree(ospath(cfg2.svg_path))
+    for i in os.listdir(ospath(cfg2.dir_path)):
+        if i.endswith('.ebt'):
+            os.remove(ospath(cfg2.dir_path+i))
+        elif i == "progress.json":
+            os.remove(ospath(cfg2.dir_path+i))
 
 class mode():
     def __init__(self) -> None:
