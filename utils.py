@@ -5,15 +5,17 @@ import zipfile
 from retrying import retry
 from pathlib import Path
 
+
 def ospath(path):
-    if os.name == 'nt':
-        fullpath=Path(path)
+    if os.name == "nt":
+        fullpath = Path(path)
         if len(str(fullpath.absolute())) >= 260:
             return "\\\\?\\" + str(fullpath.absolute())
         else:
             return fullpath
     else:
         return path
+
 
 def choose(text=""):
     if text == "exists":
@@ -60,20 +62,24 @@ def write_file(data, path):
         f.write(data)
         f.close()
 
+
 def writes_file(data, path):
     with open(ospath(path), "w") as f:
         f.write(data)
         f.close()
+
 
 def read_file(path):
     with open(ospath(path), "r") as file:
         read = file.read()
         return read
 
+
 def load_file(path):
-    with open(ospath(path), 'rb') as file:
+    with open(ospath(path), "rb") as file:
         read = file.read()
         return read
+
 
 @retry(stop_max_attempt_number=3, wait_fixed=500)
 def download(url: str, filepath: str):
