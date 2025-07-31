@@ -5,13 +5,9 @@ class Compressor:
     def __init__(self):
         return None
 
-    def load(self, file):
-        with open(file, 'rb') as f:
-            return f.read()
-
     def processSWF(self,file_EBT,file_EBT_PK,path):
-        ph = self.decompressEBT_PH(self.load(file_EBT))
-        pk = self.decompressEBT_PK(self.load(file_EBT_PK))
+        ph = self.decompressEBT_PH(load_file(file_EBT))
+        pk = self.decompressEBT_PK(load_file(file_EBT_PK))
         swf = self.makeup(ph,pk)
         write_file(swf,path)
 

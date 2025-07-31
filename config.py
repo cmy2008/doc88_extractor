@@ -1,4 +1,5 @@
-import json,os
+import os
+import json
 
 class Config:
     def __init__(self, config_path="config.json"):

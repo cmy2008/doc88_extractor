@@ -4,11 +4,10 @@ print(
     "\n免责声明： 仅供学习或交流用，请在 24 小时内删除本程序，严禁用于任何商业或非法用途，使用该工具而产生的任何法律后果，用户需自行承担全部责任\n"
 )
 import os
-import platform
 from config import *
 if cfg2.swf2svg:
     print("使用 SVG 转换功能建议同时关闭 font-face 功能，否则将会导致大量转换失败，若只需要 SVG 文件可关闭清理功能，文件将会生成到文档目录下的 svg 目录")
-    if platform.system() == "Windows":
+    if os.name == "nt":
         print(
             "警告：你正在使用 Windows 系统并使用 SVG 转换功能，虽然我们有意使其在多平台下工作，但需要使用 Cairo 库才能进行 SVG 的转换，建议你安装 GTK 运行库（需要 200MB 左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的 bin 目录添加到系统环境的 PATH 中然后重启终端或 Vscode\n"
         )
@@ -108,8 +107,7 @@ class get_cfg():
         return True
 
 def append_pdf(pdf: PdfWriter, file: str):
-    with open(file, "rb") as f:
-        pdf.append(f)
+    pdf.append(ospath(file))
     return pdf
 
 
@@ -120,18 +118,18 @@ class init():
         cfg2.svg_path = cfg2.dir_path + cfg2.o_svg_path
         cfg2.pdf_path = cfg2.dir_path + cfg2.o_pdf_path
         try:
-            os.makedirs(cfg2.dir_path)
+            os.makedirs(ospath(cfg2.dir_path))
         except FileExistsError:
             if choose("exists"):
                 pass
             else:
                 exit()
-        if not os.path.exists(f"{cfg2.dir_path}index.json"):
+        if not os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
             write_file(bytes(json.dumps(config),encoding="utf-8"),cfg2.dir_path + "index.json")
         try:
-            os.makedirs(cfg2.swf_path)
-            os.makedirs(cfg2.svg_path)
-            os.makedirs(cfg2.pdf_path)
+            os.makedirs(ospath(cfg2.swf_path))
+            os.makedirs(ospath(cfg2.svg_path))
+            os.makedirs(ospath(cfg2.pdf_path))
         except:
             print("")
 
@@ -147,7 +145,7 @@ def main(encoded_str,more=False):
         return False
     init(config)
     cfg = gen_cfg(config)
-    if os.path.exists(f"{cfg2.dir_path}index.json"):
+    if os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
         cfg = gen_cfg(json.loads(read_file(f"{cfg2.dir_path}index.json")))
     print(f"文档名：{cfg.p_name}")
     print(f"上传日期：{cfg.p_date}")
@@ -172,7 +170,7 @@ def main(encoded_str,more=False):
                         "https://www.doc88.com/doc.php?act=download&pcode="
                         + cfg.p_code
                     ).text,
-                    file_path,
+                    file_path
                 )
                 print("Saved file to " + file_path)
                 return True
@@ -218,7 +216,7 @@ class downloader():
         self.cfg=cfg
         self.downloaded=True
         self.progressfile=cfg2.dir_path + "progress.json"
-        if os.path.isfile(self.progressfile):
+        if os.path.isfile(ospath(self.progressfile)):
             self.read_progress()
         else:
             self.progress={
@@ -227,13 +225,14 @@ class downloader():
             }
     
     def read_progress(self):
-        self.progress = json.loads(read_file(self.progressfile))
+        try:
+            self.progress = json.loads(read_file(self.progressfile))
+        except json.decoder.JSONDecodeError:
+            self.progress = {}
 
     def save_progress(self,type: str, page: int):
         self.progress[type].append(page)
-        with open(self.progressfile, "w") as file:
-            file.write(json.dumps(self.progress))
-            file.close()
+        writes_file(json.dumps(self.progress),self.progressfile)
 
     def ph(self,i: int):
         url = self.cfg.ph(i)
@@ -328,8 +327,8 @@ class converter():
                 + " "
                 + r(cfg2.swf_path + str(num) + ".swf")
             ).read()
-            shutil.move(dirpath + "1.svg", cfg2.svg_path + str(i) + "_.svg")
-            shutil.rmtree(dirpath)
+            shutil.move(ospath(dirpath + "1.svg"), ospath(cfg2.svg_path + str(i) + "_.svg"))
+            shutil.rmtree(ospath(dirpath))
         
         print("Converting page " + str(i) + " to svg...")
         try:
@@ -351,9 +350,9 @@ class converter():
                 + " "
                 + r(cfg2.swf_path + str(num) + ".swf")
             ).read()
-            shutil.move(dirpath + "frames.pdf", cfg2.pdf_path + str(i) + "_.pdf")
+            shutil.move(ospath(dirpath + "frames.pdf"), ospath(cfg2.pdf_path + str(i) + "_.pdf"))
             shutil.rmtree(dirpath)
-            shutil.move(cfg2.pdf_path + str(i) + "_.pdf", cfg2.pdf_path + str(i) + ".pdf")
+            shutil.move(ospath(cfg2.pdf_path + str(i) + "_.pdf"), ospath(cfg2.pdf_path + str(i) + ".pdf"))
             self.pdflist.add(i)
         print("Converting page " + str(i) + " to pdf...")
         try:
@@ -370,7 +369,7 @@ class converter():
         try:
             print(f"Converting page {i} to pdf...")
             cairosvg.svg2pdf(
-                url=cfg2.svg_path + str(i) + "_.svg", write_to=cfg2.pdf_path + str(i) + ".pdf"
+                url=cfg2.svg_path + str(i) + "_.svg", write_to=str(ospath(cfg2.pdf_path + str(i) + ".pdf"))
             )
             self.pdflist.add(i)
         except FileNotFoundError:
@@ -378,7 +377,7 @@ class converter():
 
     def makepdf(self):
         for i in self.pdflist:
-            self.pdf = append_pdf(self.pdf, cfg2.pdf_path + str(i) + ".pdf")
+            self.pdf = append_pdf(self.pdf, str(ospath(cfg2.pdf_path + str(i) + ".pdf")))
 
 
 def convert(cfg):
@@ -401,16 +400,16 @@ def convert(cfg):
                 executor.submit(doc.svg2pdf, i)
     print("Now start making pdf, please wait...")
     doc.makepdf()
-    doc.pdf.write(cfg2.dir_path[:-1] + ".pdf")
+    doc.pdf.write(str(ospath(cfg2.dir_path[:-1] + ".pdf")))
     print("Saved file to " + cfg2.dir_path[:-1] + ".pdf")
     print("Tip: Sometimes viewing the file in Edge will cause some problems that can't display texts properly, but you can use another viewer such as Chrome.")
 
 
 def clean(cfg2):
     print("cleaning cache...")
-    shutil.rmtree(cfg2.swf_path)
-    shutil.rmtree(cfg2.pdf_path)
-    shutil.rmtree(cfg2.svg_path)
+    shutil.rmtree(ospath(cfg2.swf_path))
+    shutil.rmtree(ospath(cfg2.pdf_path))
+    shutil.rmtree(ospath(cfg2.svg_path))
 
 class mode():
     def __init__(self) -> None:

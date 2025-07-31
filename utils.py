@@ -1,5 +1,19 @@
-import time,os,requests,zipfile
+import time
+import os
+import requests
+import zipfile
 from retrying import retry
+from pathlib import Path
+
+def ospath(path):
+    if os.name == 'nt':
+        fullpath=Path(path)
+        if len(str(fullpath.absolute())) >= 260:
+            return "\\\\?\\" + str(fullpath.absolute())
+        else:
+            return fullpath
+    else:
+        return path
 
 def choose(text=""):
     if text == "exists":
@@ -17,17 +31,20 @@ def choose(text=""):
     else:
         return False
 
+
 def logw(t: str):
-        log='[' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + ']: ' + t + '\n'
-        log_dir='logs/'
-        dirc=log_dir + time.strftime('%Y-%m-%d', time.localtime()) + '.log'
-        if not os.path.isdir(log_dir):
-            os.mkdir(log_dir)
-        with open(dirc, 'a') as file:
-            file.write(log)
+    log = "[" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + "]: " + t + "\n"
+    log_dir = "logs/"
+    dirc = log_dir + time.strftime("%Y-%m-%d", time.localtime()) + ".log"
+    if not os.path.isdir(log_dir):
+        os.mkdir(log_dir)
+    with open(ospath(dirc), "a") as file:
+        file.write(log)
+
 
 def r(str):
     return '"' + str + '"'
+
 
 def get_request(url: str):
     headers = {
@@ -37,22 +54,33 @@ def get_request(url: str):
     }
     return requests.get(url, headers=headers)
 
-def write_file(data,path):
-    with open(path, 'wb') as f:
+
+def write_file(data, path):
+    with open(ospath(path), "wb") as f:
+        f.write(data)
+        f.close()
+
+def writes_file(data, path):
+    with open(ospath(path), "w") as f:
         f.write(data)
         f.close()
 
 def read_file(path):
-    with open(path, "r") as file:
+    with open(ospath(path), "r") as file:
         read = file.read()
         return read
 
-@retry(stop_max_attempt_number=3,wait_fixed=500)
+def load_file(path):
+    with open(ospath(path), 'rb') as file:
+        read = file.read()
+        return read
+
+@retry(stop_max_attempt_number=3, wait_fixed=500)
 def download(url: str, filepath: str):
-    write_file(requests.get(url).content,filepath)
+    write_file(requests.get(url).content, filepath)
+
 
 def extractzip(file_path: str, topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
         f.extractall(topath)
         f.close
-

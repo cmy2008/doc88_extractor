@@ -31,15 +31,11 @@ class get_more():
         return None
 
     def read_progress(self):
-        with open(self.progressfile, "r") as file:
-            self.progress = json.loads(file.read())
-            file.close()
+        self.progress = json.loads(read_file(self.progressfile))
 
     def save_progress(self,type: str, page: int):
         self.progress[type].append(page)
-        with open(self.progressfile, "w") as file:
-            file.write(json.dumps(self.progress))
-            file.close()
+        writes_file(json.dumps(self.progress),self.progressfile)
 
     def start(self):
         
@@ -54,7 +50,7 @@ class get_more():
         url=self.cfg.ebt_host + "/getebt-" + encode(f"{self.level}-{headsize}-{self.chunk_size}-{self.cfg.p_swf}-1-{self.cfg.p_code}",key2) + ".ebt"
         response = requests.get(url, stream=True)
         if response.status_code == 200:
-            with open(f"{self.filepath}cache.ebt", 'wb') as file:
+            with open(ospath(f"{self.filepath}cache.ebt"), 'wb') as file:
                 size=0
                 offset=0
                 status=False
