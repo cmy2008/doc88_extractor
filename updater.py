@@ -52,7 +52,12 @@ class Update:
 
     def ffdec_update(self):
         if os.path.isfile("ffdec/ffdec.jar"):
-            if choose("是否删除旧版本ffdec，否则创建备份？ (Y/n): "):
+            if choose("是否删除旧版本ffdec，否则创建备份？ (Y: 删除, N: 备份): "):
+                try:
+                        shutil.rmtree("ffdec")
+                except Exception as e:
+                    print(f"Error occurred while removing old version: {e}")
+            else:
                 try:
                     name=self.cfg2.ffdec_version
                     for i in range(1,100):
@@ -62,11 +67,6 @@ class Update:
                     shutil.move("ffdec", f"ffdec_{name}")
                 except Exception as e:
                     print(f"Error occurred while updating old version: {e}")
-            else:
-                try:
-                    shutil.rmtree("ffdec")
-                except Exception as e:
-                    print(f"Error occurred while removing old version: {e}")
         return self.download_ffdec()
 
     def upgrade(self):
