@@ -36,6 +36,8 @@ class Update:
         print("下载完成! 开始解压...")
         try:
             extractzip("ffdec/ffdec.zip", "ffdec/")
+            os.remove("ffdec/ffdec.zip")
+            print("解压完成!")
             return True
         except zipfile.BadZipFile:
             print(
