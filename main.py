@@ -370,9 +370,12 @@ class converter:
 
 def convert(cfg: gen_cfg):
     print("开始转换...")
-    print(
-        "!! 警告: 此过程可能会使用较多的内存(100MB-5GB)，较高的 CPU 使用率，以及较长的时间。您可以在配置文件中修改线程数以平衡性能 !!"
-    )
+    if cfg2.swf2svg:
+        print(
+            "!! 警告: 此过程可能会在 SVG 转换到 PDF 时使用较多的内存(100MB-10GB)，较高的 CPU 使用率，以及较长的时间。您可以在配置文件中修改线程数以平衡性能 !!"
+        )
+    else:
+        print("!! 警告: 此过程可能会使用较高的 CPU 使用率，以及较长的时间。您可以在配置文件中修改线程数以平衡性能 !!")
     max_workers = cfg2.convert_workers
     doc = converter()
     if not cfg2.swf2svg:
