@@ -8,7 +8,7 @@ build/
 dist/
 __pycache__/
 docs/
-ffdec/
+ffdec*
 test/
 fonts/
 .vscode/launch.json

@@ -16,7 +16,6 @@ class get_more:
         self.level = level
         self.chunk_size = 10240000
         self.header = bytearray()
-        # self.heads=[]
         self.filepath = filepath
         self.newpageids = []
         self.pagecount = page
@@ -101,12 +100,6 @@ class get_more:
                                 else:
                                     status = False
                             size += file.write(chunk)
-                            # if setoffset == 1:
-                            #     setoffset=2
-                            # elif setoffset==2:
-                            #     setoffset=0
-                            #     print(chunk.hex())
-                            #     self.heads.append(chunk.hex())
                 except requests.exceptions.ChunkedEncodingError:
                     pass
                 if self.test():
@@ -118,15 +111,12 @@ class get_more:
                     self.ids.append(f"{headsize+offset}-{size-offset}")
                     print(f"finish:{headsize+offset}-{size-offset}")
                 else:
-                    print("Except ending, is file too big?")
+                    print("Except ending, is the file too big?")
                 print(f"total page:{len(self.ids)}")
                 return True
 
     def test(self):
         comp = Compressor()
-        # data=self.PK_data
-        # ranges=byte_range.split('-')
-        # pk=data[int(ranges[0])-headsize:int(ranges[0])-headsize+int(ranges[1])]
         pk = comp.decompressEBT_PK(self.PK_data)
         ph = comp.decompressEBT_PH(self.PH_data)
         if pk:

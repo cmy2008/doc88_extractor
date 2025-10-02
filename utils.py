@@ -4,10 +4,11 @@ import requests
 import zipfile
 from retrying import retry
 from pathlib import Path
+from config import *
 
 
 def ospath(path):
-    if os.name == "nt":
+    if os.name == "nt" and cfg2.path_replace:
         fullpath = Path(path)
         if len(str(fullpath.absolute())) >= 260:
             return "\\\\?\\" + str(fullpath.absolute())
@@ -16,6 +17,12 @@ def ospath(path):
     else:
         return path
 
+def special_path(path):
+    char_list = ['*', '|', ':', '?', '/', '<', '>', '"', '\\']
+    new_char_list = ['＊', '｜', '：', '？', '／', '＜', '＞', '＂', '＼']
+    for i in range(len(char_list)):
+        path = path.replace(char_list[i], new_char_list[i])
+    return path
 
 def choose(text=""):
     if text == "exists":
@@ -90,3 +97,22 @@ def extractzip(file_path: str, topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
         f.extractall(topath)
         f.close
+
+class github_release:
+    def __init__(self, repo: str, n: int = 0) -> None:
+        self.repo = repo
+        self.latest_version = ""
+        self.download_url = ""
+        self.name = ""
+        self.fetch_release_info(n)
+
+    def fetch_release_info(self, n: int = 0):
+        try:
+            version_info = get_request(f"https://api.github.com/repos/{self.repo}/releases/latest").json()
+            self.latest_version = version_info["tag_name"]
+            self.download_url = version_info['assets'][n]['browser_download_url']
+            self.name = version_info['assets'][n]['name']
+        except Exception as e:
+            print(f"Error occurred while fetching GitHub release info: {e}")
+            self.latest_version = ""
+            self.download_url = ""

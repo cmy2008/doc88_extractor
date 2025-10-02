@@ -15,9 +15,13 @@ class gen_cfg:
         self.pageids=decode(self.pageInfo).split(",")
         self.p_count=len(self.pageids)
         self.headnums=self.headerInfo.replace('"',"").split(',')
-    def phnum(self)-> int:
+    def ph_nums(self)-> int:
         return len(self.headnums)
-    
+
+    def ph_num(self, page: int)-> int:
+        pageid = self.pageids[page - 1].split("-")
+        return int(pageid[0])
+
     def ph(self,level):
         return self.c_ph(self,level)
     
@@ -27,10 +31,7 @@ class gen_cfg:
         def __init__(self, cfg, level: int) -> None:
             self.name="getebt-" + encode(f"{level}-0-{cfg.headnums[level-1]}-{cfg.p_swf}",key2) + ".ebt"
             self.url=f"{cfg.ebt_host}/{self.name}"
-    
-    def ph_num(self, page: int)-> int:
-        pageid = self.pageids[page - 1].split("-")
-        return int(pageid[0])
+
     class c_pk():
         def __init__(self, cfg, page: int) -> None:
             pageid = cfg.pageids[page - 1].split("-")

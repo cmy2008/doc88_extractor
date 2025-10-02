@@ -65,11 +65,11 @@
 
 ![](https://edge.piglin.eu.org/seewo-school/uwixiuyyhhqpnhlwhuhlzminquhhihhh)
 
-看起来 m_main.init 的内容很像是 base64，极有可能和之前的加密一样，我们直接用解工具解出来：
+看起来 m_main.init 的内容很像是 base64，极有可能和之前的加密一样，我们直接用解密工具解出来：
 
 ![](https://edge.piglin.eu.org/seewo-school/uwixiuyyhhqpnhlwhuhniukplkphihhh)
 
-没错，这就是Config的内容
+没错，这就是 Config 的内容
 
 到现在，我们就可以做出下载流程了：
 ```

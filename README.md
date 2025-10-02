@@ -1,6 +1,6 @@
 # WHAT IS THIS
 ## Introduction
-A tool make you download the doc88 documents.
+A tool make you download the doc88 documents(non-screenshot).
 ## Features
 NOT JUST IMAGE, IT HAS REAL SHAPES AND TEXTS, ALOMOST SAME AS ORIGINAL DOCUMENT.
 
@@ -34,8 +34,13 @@ python3 main.py
 # CONFIGURATION
 When you first run it, there will be a config.json:
 ```
-swf2svg: If true, then swf files will be converted to svg first.
+proxy_url: The URL of Github's proxy service.
+check_update: If true, will always check updates when starting up.
+swf2svg: If true, swf files will be converted to svg first.
 svgfontface: Only working when swf2pdf is false. If true, then the texts will be converted, but this will impact pdf converting causing a lot errors.
 clean: If false, the swf,pdf,svg,ebt files will be kept.
-get_more: If true, then always through scanning to get pages.
+get_more: If true, will always through scanning to get pages.
+path_replace: If true, will replace long path in Windows.
+download_workers: Number of threads for downloading files.
+convert_workers: Number of threads for converting files.
 ```
