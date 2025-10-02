@@ -123,7 +123,7 @@ class Update:
     def check_ffdec_update(self):
         try:
             ffdec_info = github_release("jindrapetrik/jpexs-decompiler",2)
-            if ffdec_info.latest_version != self.cfg2.ffdec_version and os.path.isfile("ffdec/ffdec.jar"):
+            if ffdec_info.latest_version != self.cfg2.ffdec_version and os.path.isfile("ffdec/ffdec.jar") and self.cfg2.check_update:
                 if not choose(f"当前 ffdec 版本 {self.cfg2.ffdec_version}, 检测到新版本(文件名：{ffdec_info.name})，是否更新？ (Y/n): "):
                     return False
             if ffdec_info.latest_version == self.cfg2.ffdec_version and os.path.isfile("ffdec/ffdec.jar"):
