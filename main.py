@@ -388,7 +388,7 @@ def convert(cfg: gen_cfg):
                 executor.submit(doc.svg2pdf, i)
     print("Now start making pdf, please wait...")
     doc.makepdf()
-    pdf_name = cfg2.dir_path + special_path(cfg.p_name) + ".pdf"
+    pdf_name = cfg2.o_dir_path + special_path(cfg.p_name) + ".pdf"
     doc.pdf.write(str(ospath(pdf_name)))
     print("转换完成！")
     print("已将文件保存至 " + pdf_name)
