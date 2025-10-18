@@ -14,4 +14,4 @@ fonts/
 .vscode/launch.json
 logs/
 config.json
-debug.py
+debug*

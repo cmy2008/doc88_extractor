@@ -263,7 +263,7 @@ def get_swf(cfg: gen_cfg):
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.pk, i)
     if not down.downloaded:
-        print("Downlaod error")
+        raise Exception("Downlaod error")
     print("Making pages...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):

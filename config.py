@@ -5,7 +5,7 @@ class Config:
     def __init__(self, config_path="config.json"):
         self.default_config ={
             "version": "1.7",
-            "ffdec_version": "24.1.0",
+            "ffdec_version": "version24.1.0",
             "o_dir_path": "docs/",
             "o_swf_path": "swf/",
             "o_pdf_path": "pdf/",
@@ -30,7 +30,7 @@ class Config:
             config_data = json.load(f)
         keys = self.default_config.keys()
         self.version = config_data["version"] if "version" in config_data else "1.6"
-        self.ffdec_version = config_data["ffdec_version"] if "ffdec_version" in config_data else "24.0.1"
+        self.ffdec_version = config_data["ffdec_version"] if "ffdec_version" in config_data else "UNKONWN"
         for key in keys:
             if key not in config_data:
                 config_data[key] = self.default_config[key]
