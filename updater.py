@@ -51,6 +51,7 @@ class Update:
             print("Java 未找到! 请安装 Java 并将其添加到 PATH 中。")
             input()
             return False
+        return True
 
     def ffdec_update(self):
         if os.path.isfile("ffdec/ffdec.jar"):

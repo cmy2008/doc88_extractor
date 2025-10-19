@@ -454,6 +454,8 @@ class mode:
 
 if __name__ == "__main__":
     update=Update(cfg2)
+    if not update.check_java():
+        exit()
     update.check_ffdec_update()
     if cfg2.check_update:
         update.check_update()
