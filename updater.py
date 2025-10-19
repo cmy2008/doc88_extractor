@@ -103,7 +103,7 @@ class Update:
         if self.cfg2.version < "1.7":
             print("检测到旧版本资源文件，正在更新...")
             self.resource_update()
-            self.cfg2.version = self.cfg2.default_config["version"]
+        self.cfg2.version = self.cfg2.default_config["version"]
         self.cfg2.save()
     
     def resource_update(self):
