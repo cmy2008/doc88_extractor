@@ -4,7 +4,7 @@ import json
 class Config:
     def __init__(self, config_path="config.json"):
         self.default_config ={
-            "version": "1.7",
+            "version": "1.8",
             "ffdec_version": "version24.1.0",
             "o_dir_path": "docs/",
             "o_swf_path": "swf/",
