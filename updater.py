@@ -2,6 +2,7 @@ from utils import *
 import shutil
 import os
 import json
+import subprocess
 
 class Update:
     def __init__(self, cfg2: Config) -> None:
@@ -47,12 +48,38 @@ class Update:
             return False
 
     def check_java(self):
-        if os.system("java -version > " + os.devnull) != 0:
-            print("Java 未找到! 请安装 Java 并将其添加到 PATH 中。")
-            input()
-            return False
-        return True
-
+        text="Java 不正常，请尝试重新安装 Java。"
+        text2="Java 未找到! 请安装 Java 并将其添加到 PATH 或 JAVA_HOME 中。"
+        try:
+            output = subprocess.run(['java', '-version'], capture_output=True, text=True)
+            if output.returncode != 0:
+                print(text)
+                return False
+            return True
+        except FileNotFoundError:
+            platform = os.name
+            if platform == "nt":
+                java_home = os.environ.get("JAVA_HOME", "")
+                if java_home:
+                    java_path = os.path.join(java_home, "bin", "java.exe")
+                    if os.path.isfile(java_path):
+                        os.environ["PATH"] = os.pathsep.join([os.path.join(java_home, "bin"), os.environ.get("PATH", "")])
+                        try:
+                            if subprocess.run(['java', '-version'],capture_output=True).returncode == 0:
+                                print("警告: Java 未配置到 PATH 中，但在 JAVA_HOME 中找到了，建议将其添加到 PATH 中。")
+                                return True
+                            else:
+                                print(text)
+                                return False
+                        except FileNotFoundError:
+                            print(text2)
+                            return False
+                    else:
+                        print(text2)
+                        return False
+            else:
+                print(text2)
+                return False
     def ffdec_update(self):
         if os.path.isfile("ffdec/ffdec.jar"):
             if choose("是否删除旧版本ffdec，否则创建备份？ (Y: 删除, N: 备份): "):
