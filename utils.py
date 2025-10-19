@@ -107,12 +107,7 @@ class github_release:
         self.fetch_release_info(n)
 
     def fetch_release_info(self, n: int = 0):
-        try:
-            version_info = get_request(f"https://api.github.com/repos/{self.repo}/releases/latest").json()
-            self.latest_version = version_info["tag_name"]
-            self.download_url = version_info['assets'][n]['browser_download_url']
-            self.name = version_info['assets'][n]['name']
-        except Exception as e:
-            print(f"Error occurred while fetching GitHub release info: {e}")
-            self.latest_version = ""
-            self.download_url = ""
+        version_info = get_request(f"https://api.github.com/repos/{self.repo}/releases/latest").json()
+        self.latest_version = version_info["tag_name"]
+        self.download_url = version_info['assets'][n]['browser_download_url']
+        self.name = version_info['assets'][n]['name']

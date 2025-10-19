@@ -147,8 +147,10 @@ class Update:
             main_info = github_release("cmy2008/doc88_extractor")
             if main_info.latest_version.lstrip("V") > self.cfg2.default_config["version"]:
                 print(f"主程序检测到新版本 {main_info.latest_version}，下载连接：\n{main_info.download_url}")
+            return True
         except Exception as e:
             print(f"Error occurred while checking for project updates: {e}")
+            return False
     
     def check_ffdec_update(self):
         try:
@@ -165,3 +167,4 @@ class Update:
             return True
         except Exception as e:
             print(f"Error occurred while checking ffdec updates: {e}")
+            return False
