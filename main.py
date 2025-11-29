@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import os
+if __file__:
+    if os.path.dirname(__file__):
+        os.chdir(os.path.dirname(__file__))
 from config import *
+
 print(f"DOC88 （预览）文档提取工具 V{cfg2.default_config['version']}")
 print("by: Cuite_Piglin")
 print(
     "\n免责声明： 仅供学习或交流用，请在 24 小时内删除本程序，严禁用于任何商业或非法用途，使用该工具而产生的任何法律后果，用户需自行承担全部责任\n"
 )
-import os
 
 if cfg2.swf2svg:
     print(

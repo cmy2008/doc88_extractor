@@ -149,7 +149,7 @@ class Update:
                 print(f"主程序检测到新版本 {main_info.latest_version}，下载连接：\n{main_info.download_url}")
             return True
         except Exception as e:
-            print(f"Error occurred while checking for project updates: {e}")
+            print(f"检测主程序更新时出错: {str(e.__class__.__name__)}: {e}")
             return False
     
     def check_ffdec_update(self):
@@ -166,5 +166,8 @@ class Update:
             self.cfg2.save()
             return True
         except Exception as e:
-            print(f"Error occurred while checking ffdec updates: {e}")
+            print(f"检测 ffdec 更新时出错: {str(e.__class__.__name__)}: {e}")
+            if not os.path.isfile("ffdec/ffdec.jar"):
+                print("请手动下载 ffdec 的压缩包，并将文件（确保包含 'ffdec.jar'）解压到 'ffdec' 目录中：https://github.com/jindrapetrik/jpexs-decompiler/releases")
+                exit()
             return False
