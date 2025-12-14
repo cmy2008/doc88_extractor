@@ -185,8 +185,9 @@ def main(encoded_str, more=False):
     try:
         if not more:
             get_swf(cfg)
-        convert(cfg)
-        del cfg
+        if not debug:
+            convert(cfg)
+            del cfg
         return True
     except Exception as err:
         print(err)
@@ -272,7 +273,7 @@ def get_swf(cfg: gen_cfg):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.makeswf, i)
-    print("Donload done. (total page: " + str(cfg.p_count) + ")")
+    print(f"Donload done. (total page: {cfg.p_count})")
 
 
 class converter:
@@ -293,27 +294,21 @@ class converter:
 
     def set_swf(self, i: int):
         return os.popen(
-            "java -jar ffdec/ffdec.jar -header -set frameCount 1 "
-            + r(cfg2.swf_path + str(i) + ".swf")
-            + " "
-            + r(cfg2.swf_path + str(i) + ".swf")
+            f"java -jar ffdec/ffdec.jar -header -set frameCount 1 \"{cfg2.swf_path}{i}.swf\" \"{cfg2.swf_path}{i}.swf\""
         ).read()
 
     def swf2svg(self, i: int):
         def execute(num: int):
             dirpath = cfg2.svg_path + str(num) + "/"
             log = os.popen(
-                "java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame "
-                + r(dirpath)
-                + " "
-                + r(cfg2.swf_path + str(num) + ".swf")
+                f"java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame \"{dirpath}\" \"{cfg2.swf_path}{num}.swf\""
             ).read()
             shutil.move(
-                ospath(dirpath + "1.svg"), ospath(cfg2.svg_path + str(i) + "_.svg")
+                ospath(f"{dirpath}1.svg"), ospath(f"{cfg2.svg_path}{i}_.svg")
             )
             shutil.rmtree(ospath(dirpath))
 
-        print("Converting page " + str(i) + " to svg...")
+        print(f"Converting page {i} to svg...")
         try:
             execute(i)
         except FileNotFoundError:
@@ -328,22 +323,19 @@ class converter:
         def execute(num: int):
             dirpath = cfg2.pdf_path + str(num) + "/"
             log = os.popen(
-                "java -jar ffdec/ffdec.jar -format frame:pdf -select 1 -export frame "
-                + r(dirpath)
-                + " "
-                + r(cfg2.swf_path + str(num) + ".swf")
+                f"java -jar ffdec/ffdec.jar -format frame:pdf -select 1 -export frame \"{dirpath}\" \"{cfg2.swf_path}{num}.swf\""
             ).read()
             shutil.move(
-                ospath(dirpath + "frames.pdf"), ospath(cfg2.pdf_path + str(i) + "_.pdf")
+                ospath(f"{dirpath}frames.pdf"), ospath(f"{cfg2.pdf_path}{i}_.pdf")
             )
             shutil.rmtree(dirpath)
             shutil.move(
-                ospath(cfg2.pdf_path + str(i) + "_.pdf"),
-                ospath(cfg2.pdf_path + str(i) + ".pdf"),
+                ospath(f"{cfg2.pdf_path}{i}_.pdf"),
+                ospath(f"{cfg2.pdf_path}{i}.pdf"),
             )
             self.pdflist.add(i)
 
-        print("Converting page " + str(i) + " to pdf...")
+        print(f"Converting page {i} to pdf...")
         try:
             execute(i)
         except FileNotFoundError:
@@ -358,8 +350,8 @@ class converter:
         try:
             print(f"Converting page {i} to pdf...")
             cairosvg.svg2pdf(
-                url=cfg2.svg_path + str(i) + "_.svg",
-                write_to=str(ospath(cfg2.pdf_path + str(i) + ".pdf")),
+                url=f"{cfg2.svg_path}{i}_.svg",
+                write_to=str(ospath(f"{cfg2.pdf_path}{i}.pdf")),
             )
             self.pdflist.add(i)
         except FileNotFoundError:
@@ -368,7 +360,7 @@ class converter:
     def makepdf(self):
         for i in self.pdflist:
             self.pdf = append_pdf(
-                self.pdf, str(ospath(cfg2.pdf_path + str(i) + ".pdf"))
+                self.pdf, str(ospath(f"{cfg2.pdf_path}{i}.pdf"))
             )
 
 
@@ -459,7 +451,7 @@ class mode:
 if __name__ == "__main__":
     update=Update(cfg2)
     if not update.check_java():
-        input()
+        input_break()
         exit()
     update.check_ffdec_update()
     if cfg2.check_update:
@@ -467,12 +459,17 @@ if __name__ == "__main__":
     update.upgrade()
     a = sys.argv
     user = mode()
-    if len(a) == 1:
-        exe = user.url
-    elif "-p" in a:
+    if "--debug" in a:
+        global debug
+        debug = True
+    else:
+        debug = False
+    if "-p" in a:
         exe = user.pcode
     elif "-d" in a:
         exe = user.data
+    else:
+        exe = user.url
     while True:
         if exe():
             update.gen_indexs()

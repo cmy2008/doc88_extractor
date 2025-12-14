@@ -13,6 +13,7 @@ from utils import *
 class get_more:
     def __init__(self, cfg: gen_cfg, level, filepath, page=0) -> None:
         self.cfg = cfg
+        self.comp = Compressor()
         self.level = level
         self.chunk_size = 10240000
         self.header = bytearray()
@@ -116,12 +117,11 @@ class get_more:
                 return True
 
     def test(self):
-        comp = Compressor()
-        pk = comp.decompressEBT_PK(self.PK_data)
-        ph = comp.decompressEBT_PH(self.PH_data)
+        pk = self.comp.decompressEBT_PK(self.PK_data)
+        ph = self.comp.decompressEBT_PH(self.PH_data)
         if pk:
             write_file(
-                comp.makeup(ph, pk),
+                self.comp.makeup(ph, pk),
                 f"{self.filepath}swf/{self.pagecount+len(self.ids)+1}.swf",
             )
             return True

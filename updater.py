@@ -7,10 +7,14 @@ import subprocess
 class Update:
     def __init__(self, cfg2: Config) -> None:
         self.cfg2 = cfg2
-        self.docs_dir = self.cfg2.o_dir_path[0:-1] if self.cfg2.o_dir_path.endswith("/") else self.cfg2.o_dir_path
+        self.docs_dir = os.path.normpath(self.cfg2.o_dir_path)
     
     def download_ffdec(self):
-        ffdec_info = github_release("jindrapetrik/jpexs-decompiler",2)
+        try:
+            ffdec_info = github_release("jindrapetrik/jpexs-decompiler",2)
+        except Exception as e:
+            print(f"获取 ffdec 版本信息时出错: {str(e.__class__.__name__)}: {e}")
+            return False
         ffdec_url = cfg2.proxy_url + ffdec_info.download_url
         print("开始下载 ffdec...")
         print(
@@ -32,7 +36,7 @@ class Update:
             print(
                 "下载出错! 请检查网络连接或修改配置中的 'proxy_url' 内容。如果仍然无法下载，请手动下载 ffdec 文件并提取到目录 ffdec 中。"
             )
-            input()
+            input_break()
             return False
         print("下载完成! 开始解压...")
         try:
@@ -44,7 +48,7 @@ class Update:
             print(
                 "解压失败! 链接可能已失效? 请尝试修改函数 'download_ffdec' 中的 'ffdec_url' 内容。"
             )
-            input()
+            input_break()
             return False
 
     def check_java(self):
@@ -169,5 +173,6 @@ class Update:
             print(f"检测 ffdec 更新时出错: {str(e.__class__.__name__)}: {e}")
             if not os.path.isfile("ffdec/ffdec.jar"):
                 print("请手动下载 ffdec 的压缩包，并将文件（确保包含 'ffdec.jar'）解压到 'ffdec' 目录中：https://github.com/jindrapetrik/jpexs-decompiler/releases")
+                input_break()
                 exit()
             return False

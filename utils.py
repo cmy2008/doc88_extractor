@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import time
 import os
 import requests
@@ -17,12 +19,14 @@ def ospath(path):
     else:
         return path
 
+
 def special_path(path):
     char_list = ['*', '|', ':', '?', '/', '<', '>', '"', '\\']
     new_char_list = ['＊', '｜', '：', '？', '／', '＜', '＞', '＂', '＼']
     for i in range(len(char_list)):
         path = path.replace(char_list[i], new_char_list[i])
     return path
+
 
 def choose(text=""):
     if text == "exists":
@@ -51,10 +55,6 @@ def logw(t: str):
         file.write(log)
 
 
-def r(str):
-    return '"' + str + '"'
-
-
 def get_request(url: str):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
@@ -67,13 +67,11 @@ def get_request(url: str):
 def write_file(data, path):
     with open(ospath(path), "wb") as f:
         f.write(data)
-        f.close()
 
 
 def writes_file(data, path):
     with open(ospath(path), "w") as f:
         f.write(data)
-        f.close()
 
 
 def read_file(path):
@@ -96,8 +94,13 @@ def download(url: str, filepath: str):
 def extractzip(file_path: str, topath: str):
     with zipfile.ZipFile(file_path, "r") as f:
         f.extractall(topath)
-        f.close
 
+
+def input_break():
+    try:
+        input("按回车键退出...")
+    except KeyboardInterrupt:
+        exit()
 class github_release:
     def __init__(self, repo: str, n: int = 0) -> None:
         self.repo = repo
