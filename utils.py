@@ -4,6 +4,8 @@ import time
 import os
 import requests
 import zipfile
+import tarfile
+import subprocess
 from retrying import retry
 from pathlib import Path
 from config import *
@@ -91,9 +93,15 @@ def download(url: str, filepath: str):
     write_file(requests.get(url).content, filepath)
 
 
-def extractzip(file_path: str, topath: str):
-    with zipfile.ZipFile(file_path, "r") as f:
-        f.extractall(topath)
+def extract(file_path: str, topath: str):
+    if file_path.endswith(".zip"):
+        with zipfile.ZipFile(file_path, "r") as f:
+            f.extractall(topath)
+    elif file_path.endswith(".tar.gz") or file_path.endswith(".tgz"):
+        with tarfile.open(file_path, "r:*") as tar:
+            tar.extractall(path=topath)
+    else:
+        raise ValueError("Unsupported archive format: " + file_path)
 
 
 def input_break():
@@ -102,15 +110,13 @@ def input_break():
     except KeyboardInterrupt:
         exit()
 class github_release:
-    def __init__(self, repo: str, n: int = 0) -> None:
-        self.repo = repo
-        self.latest_version = ""
-        self.download_url = ""
-        self.name = ""
-        self.fetch_release_info(n)
-
-    def fetch_release_info(self, n: int = 0):
-        version_info = get_request(f"https://api.github.com/repos/{self.repo}/releases/latest").json()
+    def __init__(self, repo: str, n: int = -1) -> None:
+        self.releases = {}
+        version_info = get_request(f"https://api.github.com/repos/{repo}/releases/latest").json()
         self.latest_version = version_info["tag_name"]
-        self.download_url = version_info['assets'][n]['browser_download_url']
-        self.name = version_info['assets'][n]['name']
+        if n != -1:
+            self.download_url = version_info['assets'][n]['browser_download_url']
+            self.name = version_info['assets'][n]['name']
+        else:
+            for i in range(len(version_info['assets'])):
+                self.releases[version_info['assets'][i]['name']] = version_info['assets'][i]['browser_download_url']

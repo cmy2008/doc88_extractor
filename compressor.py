@@ -11,6 +11,8 @@ class Compressor:
         ph = self.decompressEBT_PH(load_file(file_EBT))
         pk = self.decompressEBT_PK(load_file(file_EBT_PK))
         swf = self.makeup(ph, pk)
+        # 设置帧数量为 1，可能位置会变动？
+        swf[19]=1
         write_file(swf, path)
 
     def makeup(self, ebt_ph, ebt_pk):

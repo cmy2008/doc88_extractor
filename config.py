@@ -11,6 +11,8 @@ class Config:
             "o_pdf_path": "pdf/",
             "o_svg_path": "svg/",
             "proxy_url": "https://ghproxy.cn/",
+            "ffdec_repo": "jindrapetrik/jpexs-decompiler",
+            "svg2pdf_repo": "cmy2008/svg2pdf",
             "check_update": True,
             "swf2svg": False,
             "svgfontface": False,
@@ -43,6 +45,8 @@ class Config:
         self.pdf_path = ""
         self.svg_path = ""
         self.proxy_url = config_data["proxy_url"]
+        self.ffdec_repo = config_data["ffdec_repo"]
+        self.svg2pdf_repo = config_data["svg2pdf_repo"]
         self.check_update = config_data["check_update"]
         self.swf2svg = config_data["swf2svg"]
         self.svgfontface = config_data["svgfontface"]
@@ -68,6 +72,8 @@ class Config:
             "o_pdf_path": self.o_pdf_path,
             "o_svg_path": self.o_svg_path,
             "proxy_url": self.proxy_url,
+            "ffdec_repo": self.ffdec_repo,
+            "svg2pdf_repo": self.svg2pdf_repo,
             "check_update": self.check_update,
             "swf2svg": self.swf2svg,
             "svgfontface": self.svgfontface,

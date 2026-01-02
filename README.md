@@ -33,18 +33,11 @@ pip3 install retrying pypdf requests
     <br>[Microsoft Build of OpenJDK 17 for Windows x64](https://aka.ms/download-jdk/microsoft-jdk-17.0.14-windows-x64.msi)
 
 ### SVG 转换 / SVG Converting
+- 若启用 swf2svg，程序将自动下载 swf2svg 以实现 SVG 到 PDF 的转换。若安装失败，可尝试从 [typst/svg2pdf](https://github.com/typst/svg2pdf) 编译。  
+    If swf2svg is enabled, the tool will download swf2svg automatically to perform SVG-to-PDF conversion. if installation fails, try building it from [typst/svg2pdf](https://github.com/typst/svg2pdf).
 
-- 若启用 swf2svg，需安装 cairosvg 以实现 SVG 到 PDF 的转换。  
-    If swf2svg is enabled, install cairosvg:
-
-```bash
-pip3 install cairosvg
-```
-
-- Windows 用户还需安装 GTK Runtime：
-    <br>For Windows, also install GTK Runtime:
-    <br>[GTK Runtime](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases)
-
+- 支持平台 / support platform:
+    Windows (x86_64) / Linux (x86_64/arm64) / MacOS (x86_64/arm64) / Android (arm64)
 
 ## 如何使用 / How to Use
 
@@ -78,4 +71,5 @@ python3 main.py
 
 ### 注意事项 / Attention
 - 使用 `swf2svg` 选项，也许会解决部分文档的字体形状问题（不能解决字体不全的问题，原始文件为了压缩大小，减去了未使用的字）
-- 若启用 `svgfontface` 选项，由于 `cairosvg` 的缺陷，会导致在 PDF 转换过程中出现大量问题，不推荐使用
+- 若启用 `svgfontface` 选项，由于 [typst/svg2pdf](https://github.com/typst/svg2pdf) 的缺陷，将无法转换字体，会自动替换为默认字体
+- 若启用 `svgfontface` 选项，由于 [ffdec](https://github.com/jindrapetrik/jpexs-decompiler) 的缺陷，某些形状或文本会出现转换错误

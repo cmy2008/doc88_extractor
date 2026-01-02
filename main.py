@@ -11,11 +11,8 @@ print("by: Cuite_Piglin")
 print(
     "\n免责声明： 仅供学习或交流用，请在 24 小时内删除本程序，严禁用于任何商业或非法用途，使用该工具而产生的任何法律后果，用户需自行承担全部责任\n"
 )
-
-if cfg2.swf2svg:
-    print(
-        "使用 SVG 转换功能建议同时关闭 font-face 功能，否则将会导致大量转换失败，若只需要 SVG 文件可关闭清理功能，文件将会生成到文档目录下的 svg 目录"
-    )
+# 弃用 cairosvg
+'''
     if os.name == "nt":
         print(
             "警告：你正在使用 Windows 系统并使用 SVG 转换功能，虽然我们有意使其在多平台下工作，但需要使用 Cairo 库才能进行 SVG 的转换，建议你安装 GTK 运行库（需要 200MB 左右的安装空间）：\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n如果安装后仍然无效，请尝试将安装目录下的 bin 目录添加到系统环境的 PATH 中然后重启终端或 Vscode\n"
@@ -33,6 +30,7 @@ if cfg2.swf2svg:
         else:
             print("GTK runtime not found, maybe not install?")
     import cairosvg
+'''
 import sys
 import json
 import re
@@ -86,30 +84,30 @@ def append_pdf(pdf: PdfWriter, file: str):
     return pdf
 
 
-class init:
-    def __init__(self, config: dict) -> None:
-        cfg2.dir_path = cfg2.o_dir_path + config["p_code"] + "/"
-        cfg2.swf_path = cfg2.dir_path + cfg2.o_swf_path
-        cfg2.svg_path = cfg2.dir_path + cfg2.o_svg_path
-        cfg2.pdf_path = cfg2.dir_path + cfg2.o_pdf_path
-        try:
-            os.makedirs(ospath(cfg2.dir_path))
-        except FileExistsError:
-            if choose("exists"):
-                pass
-            else:
-                exit()
-        if not os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
-            write_file(
-                bytes(json.dumps(config), encoding="utf-8"),
-                cfg2.dir_path + "index.json",
-            )
-        try:
-            os.makedirs(ospath(cfg2.swf_path))
-            os.makedirs(ospath(cfg2.svg_path))
-            os.makedirs(ospath(cfg2.pdf_path))
-        except:
-            print("")
+
+def init(config: dict) -> None:
+    cfg2.dir_path = cfg2.o_dir_path + config["p_code"] + "/"
+    cfg2.swf_path = cfg2.dir_path + cfg2.o_swf_path
+    cfg2.svg_path = cfg2.dir_path + cfg2.o_svg_path
+    cfg2.pdf_path = cfg2.dir_path + cfg2.o_pdf_path
+    try:
+        os.makedirs(ospath(cfg2.dir_path))
+    except FileExistsError:
+        if choose("exists"):
+            pass
+        else:
+            raise Exception("Canceled.")
+    if not os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
+        write_file(
+            bytes(json.dumps(config), encoding="utf-8"),
+            cfg2.dir_path + "index.json",
+        )
+    try:
+        os.makedirs(ospath(cfg2.swf_path))
+        os.makedirs(ospath(cfg2.svg_path))
+        os.makedirs(ospath(cfg2.pdf_path))
+    except:
+        print("")
 
 
 def main(encoded_str, more=False):
@@ -275,11 +273,11 @@ def get_swf(cfg: gen_cfg):
             executor.submit(down.makeswf, i)
     print(f"Donload done. (total page: {cfg.p_count})")
 
-
+# TODO: 移除 cfg2 全局变量
 class converter:
     def __init__(self) -> None:
         self.pdf = PdfWriter()
-        self.pdflist = set()
+        self.pdflist = []
         try:
             if cfg2.svgfontface:
                 log = os.popen(
@@ -292,76 +290,122 @@ class converter:
         except Exception as err:
             logw(str(err))
 
-    def set_swf(self, i: int):
-        return os.popen(
-            f"java -jar ffdec/ffdec.jar -header -set frameCount 1 \"{cfg2.swf_path}{i}.swf\" \"{cfg2.swf_path}{i}.swf\""
-        ).read()
+    # 帧数量设置，弃用
+    '''
+        def set_swf(self, i: int):
+            return os.popen(
+                f"java -jar ffdec/ffdec.jar -header -set frameCount 1 \"{cfg2.swf_path}{i}.swf\" \"{cfg2.swf_path}{i}.swf\""
+            ).read()
+    '''
 
     def swf2svg(self, i: int):
-        def execute(num: int):
-            dirpath = cfg2.svg_path + str(num) + "/"
-            log = os.popen(
-                f"java -jar ffdec/ffdec.jar -format frame:svg -select 1 -export frame \"{dirpath}\" \"{cfg2.swf_path}{num}.swf\""
-            ).read()
-            shutil.move(
-                ospath(f"{dirpath}1.svg"), ospath(f"{cfg2.svg_path}{i}_.svg")
-            )
-            shutil.rmtree(ospath(dirpath))
-
-        print(f"Converting page {i} to svg...")
+        print(f"SWF -> SVG converting worker {i} started.")
+        if os.listdir(ospath(f"{cfg2.swf_path}{i}")) == []:
+            return
+        log = ""
         try:
-            execute(i)
-        except FileNotFoundError:
-            log = self.set_swf(i)
+            dirpath = cfg2.svg_path + str(i) + "/"
+            run = subprocess.run(
+                ["java", "-jar", "ffdec/ffdec.jar", "-format", "frame:svg", "-select", "1", "-export", "frame", dirpath, f"{cfg2.swf_path}{i}"],
+                capture_output=True,
+                text=True,
+            )
+            log = run.stdout
+            if run.returncode != 0:
+                logw("SVG converting error: " + (run.stderr or run.stdout))
+            for f in os.listdir(ospath(dirpath)):
+                if os.path.isdir(ospath(f"{dirpath}{f}")):
+                    shutil.move(
+                        ospath(f"{dirpath}{f}/1.svg"), ospath(f"{cfg2.svg_path}{f[:-4]}.svg")
+                    )
+            # 删除ffdec的临时文件夹
+                    try:
+                        shutil.rmtree(ospath(f"{dirpath}"))
+                    except PermissionError:
+                        print("Can't delete temporary folder, maybe file is opened?")
+            # 删除分组文件夹
             try:
-                execute(i)
+                shutil.rmtree(ospath(f"{cfg2.swf_path}{i}/"))
+            except PermissionError:
+                print("Can't delete temporary folder, maybe file is opened?")
             except FileNotFoundError:
-                print("Can't convert this page! Skipping...")
-                logw("SVG converting error: " + log)
+                pass
+        except FileNotFoundError:
+            print("Can't convert this page! Skipping...")
+            logw("SVG converting error: " + log)
 
     def swf2pdf(self, i: int):
-        def execute(num: int):
-            dirpath = cfg2.pdf_path + str(num) + "/"
-            log = os.popen(
-                f"java -jar ffdec/ffdec.jar -format frame:pdf -select 1 -export frame \"{dirpath}\" \"{cfg2.swf_path}{num}.swf\""
-            ).read()
-            shutil.move(
-                ospath(f"{dirpath}frames.pdf"), ospath(f"{cfg2.pdf_path}{i}_.pdf")
-            )
-            shutil.rmtree(dirpath)
-            shutil.move(
-                ospath(f"{cfg2.pdf_path}{i}_.pdf"),
-                ospath(f"{cfg2.pdf_path}{i}.pdf"),
-            )
-            self.pdflist.add(i)
-
-        print(f"Converting page {i} to pdf...")
+        if os.listdir(ospath(f"{cfg2.swf_path}{i}")) == []:
+            return
+        print(f"SWF -> PDF converting worker {i} started.")
+        log = ""
         try:
-            execute(i)
-        except FileNotFoundError:
-            log = self.set_swf(i)
+            dirpath = cfg2.pdf_path + str(i) + "/"
+            run = subprocess.run(
+                ["java", "-jar", "ffdec/ffdec.jar", "-format", "frame:pdf", "-select", "1", "-export", "frame", dirpath, f"{cfg2.swf_path}{i}"],
+                capture_output=True,
+                text=True,
+            )
+            log = run.stdout
+            if run.returncode != 0:
+                logw("PDF converting error: " + (run.stderr or run.stdout))
+            for f in os.listdir(ospath(dirpath)):
+                if os.path.isdir(ospath(f"{dirpath}{f}")):
+                    shutil.move(
+                        ospath(f"{dirpath}{f}/frames.pdf"), ospath(f"{cfg2.pdf_path}{f[:-4]}.pdf")
+                    )
+                    self.pdflist.append(f[:-4])
+            # 删除ffdec的临时文件夹
+                    try:
+                        shutil.rmtree(ospath(f"{dirpath}"))
+                    except PermissionError:
+                        print("Can't delete temporary folder, maybe file is opened?")
+            # 删除分组文件夹
             try:
-                execute(i)
+                shutil.rmtree(ospath(f"{cfg2.swf_path}{i}/"))
+            except PermissionError:
+                print("Can't delete temporary folder, maybe file is opened?")
             except FileNotFoundError:
-                print("Can't convert this page! Skipping...")
-                logw("PDF converting error: " + log)
+                pass
+        except FileNotFoundError:
+            print("Can't convert this page! Skipping...")
+            logw("PDF converting error: " + log)
 
     def svg2pdf(self, i: int):
         try:
             print(f"Converting page {i} to pdf...")
-            cairosvg.svg2pdf(
-                url=f"{cfg2.svg_path}{i}_.svg",
-                write_to=str(ospath(f"{cfg2.pdf_path}{i}.pdf")),
+            # cairosvg.svg2pdf(
+            #     url=f"{cfg2.pdf_path}{i}_.svg",
+            #     write_to=str(ospath(f"{cfg2.pdf_path}{i}.pdf")),
+            # )
+            run=subprocess.run(
+                ["./svg2pdf", f"{cfg2.pdf_path}{i}.svg", f"{cfg2.pdf_path}{i}.pdf"], text=True, capture_output=True
             )
-            self.pdflist.add(i)
+            self.pdflist.append(i)
         except FileNotFoundError:
             print("Can't convert this page! Skipping...")
+            logw(f"SVG to PDF converting error: {run.stderr or run.stdout}")
 
     def makepdf(self):
+        self.pdflist = sorted(self.pdflist, key=lambda x: int(x))
         for i in self.pdflist:
             self.pdf = append_pdf(
                 self.pdf, str(ospath(f"{cfg2.pdf_path}{i}.pdf"))
             )
+    # 根据工作流数量平均分配 SWF 文件到各组文件夹中
+    def divide_swfs(self, page_count: int):
+        try:
+            for i in range(0, cfg2.convert_workers):
+                os.makedirs(ospath(f"{cfg2.swf_path}{i}/"))
+        except FileExistsError:
+            pass
+        file_index = os.listdir(ospath(cfg2.swf_path))
+        swf_files = sorted([f for f in file_index if f.endswith('.swf')], key=lambda x: int(x[:-4]))
+        for idx, swf_file in enumerate(swf_files):
+            group_num = idx % page_count
+            src_path = os.path.join(ospath(cfg2.swf_path), swf_file)
+            dest_path = os.path.join(ospath(f"{cfg2.swf_path}{group_num}/"), swf_file)
+            shutil.copy(src_path, dest_path)
 
 
 def convert(cfg: gen_cfg):
@@ -374,13 +418,14 @@ def convert(cfg: gen_cfg):
         print("!! 警告: 此过程可能会使用较高的 CPU 使用率，以及较长的时间。您可以在配置文件中修改线程数以平衡性能 !!")
     max_workers = cfg2.convert_workers
     doc = converter()
+    doc.divide_swfs(cfg2.convert_workers)
     if not cfg2.swf2svg:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for i in range(1, cfg.p_count + 1):
+            for i in range(0, max_workers):
                 executor.submit(doc.swf2pdf, i)
     else:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for i in range(1, cfg.p_count + 1):
+            for i in range(0, max_workers):
                 executor.submit(doc.swf2svg, i)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(1, cfg.p_count + 1):
@@ -457,6 +502,13 @@ if __name__ == "__main__":
     if cfg2.check_update:
         update.check_update()
     update.upgrade()
+    if cfg2.swf2svg:
+        print(
+            "使用 SVG 转换功能建议同时关闭 font-face 功能，否则将会导致字体丢失，若只需要 SVG 文件可关闭清理功能，文件将会生成到对应文档 ID 目录下的 svg 目录"
+        )
+        if not update.check_svg2pdf():
+            print("svg2pdf 工具安装失败，将继续以 SWF 到 PDF 方式转换。")
+            cfg2.swf2svg = False
     a = sys.argv
     user = mode()
     if "--debug" in a:

@@ -18,3 +18,4 @@ debug*
 docin.py
 *.svg
 *.pdf
+svg2pdf*

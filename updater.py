@@ -2,7 +2,7 @@ from utils import *
 import shutil
 import os
 import json
-import subprocess
+import platform
 
 class Update:
     def __init__(self, cfg2: Config) -> None:
@@ -11,11 +11,11 @@ class Update:
     
     def download_ffdec(self):
         try:
-            ffdec_info = github_release("jindrapetrik/jpexs-decompiler",2)
+            ffdec_info = github_release(self.cfg2.ffdec_repo,2)
         except Exception as e:
             print(f"获取 ffdec 版本信息时出错: {str(e.__class__.__name__)}: {e}")
             return False
-        ffdec_url = cfg2.proxy_url + ffdec_info.download_url
+        ffdec_url = self.cfg2.proxy_url + ffdec_info.download_url
         print("开始下载 ffdec...")
         print(
             "警告: 使用内置下载可能会非常慢，建议手动下载 ffdec 的压缩包，并将文件（确保包含 'ffdec.jar'）解压到 'ffdec' 目录中。"
@@ -40,13 +40,13 @@ class Update:
             return False
         print("下载完成! 开始解压...")
         try:
-            extractzip("ffdec/ffdec.zip", "ffdec/")
+            extract("ffdec/ffdec.zip", "ffdec/")
             os.remove("ffdec/ffdec.zip")
             print("解压完成!")
             return True
         except zipfile.BadZipFile:
             print(
-                "解压失败! 链接可能已失效? 请尝试修改函数 'download_ffdec' 中的 'ffdec_url' 内容。"
+                "解压失败! 链接可能已失效? 请尝试修改配置文件中 'ffdec_repo' 的内容。"
             )
             input_break()
             return False
@@ -84,6 +84,7 @@ class Update:
             else:
                 print(text2)
                 return False
+
     def ffdec_update(self):
         if os.path.isfile("ffdec/ffdec.jar"):
             if choose("是否删除旧版本ffdec，否则创建备份？ (Y: 删除, N: 备份): "):
@@ -158,7 +159,7 @@ class Update:
     
     def check_ffdec_update(self):
         try:
-            ffdec_info = github_release("jindrapetrik/jpexs-decompiler",2)
+            ffdec_info = github_release(self.cfg2.ffdec_repo,2)
             if ffdec_info.latest_version != self.cfg2.ffdec_version and os.path.isfile("ffdec/ffdec.jar") and self.cfg2.check_update:
                 if not choose(f"当前 ffdec 版本 {self.cfg2.ffdec_version}, 检测到新版本(文件名：{ffdec_info.name})，是否更新？ (Y/n): "):
                     return False
@@ -176,3 +177,78 @@ class Update:
                 input_break()
                 exit()
             return False
+    
+    def download_svg2pdf(self):
+        try:
+            info = github_release(self.cfg2.svg2pdf_repo)
+        except Exception as e:
+            print(f"获取 svg2pdf 版本信息时出错: {str(e.__class__.__name__)}: {e}")
+            return False
+        os_base_platform = platform.system()
+        os_arch = platform.machine().lower()
+        if os_base_platform == "Windows" and ("amd64" in os_arch or "x86_64" in os_arch):
+            file_name = 'svg2pdf-x86_64-pc-windows-msvc.zip'
+            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
+
+        elif os_base_platform == "Darwin" and ("arm64" in os_arch or "aarch64" in os_arch):
+            file_name = 'svg2pdf-aarch64-apple-darwin.tar.gz'
+            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
+
+        elif os_base_platform == "Darwin" and ("amd64" in os_arch or "x86_64" in os_arch):
+            file_name = 'svg2pdf-x86_64-apple-darwin.tar.gz'
+            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
+
+        elif os_base_platform == "Linux" and ("amd64" in os_arch or "x86_64" in os_arch):
+            file_name = 'svg2pdf-x86_64-unknown-linux-gnu.tar.gz'
+            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
+
+        # for Android support
+        elif os_base_platform == "Linux" and ("arm64" in os_arch or "aarch64" in os_arch):
+            uname = subprocess.run(['uname', '-o'], capture_output=True, text=True)
+            if "Android" in uname.stdout or "Toybox" in uname.stdout or "BusyBox" in uname.stdout:
+                file_name = 'svg2pdf-aarch64-android-libc.tar.gz'
+            else:
+                file_name = 'svg2pdf-aarch64-unknown-linux-gnu.tar.gz'
+            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
+
+        else:
+            print("当前操作系统或架构不受支持，请自行编译安装 svg2pdf：https://github.com/typst/svg2pdf")
+            file_name = None
+            return False
+        print("开始下载 svg2pdf...")
+        print("正在下载: " + svg2pdf_url)
+        try:
+            download(svg2pdf_url, file_name)
+        except:
+            print( 
+                "下载出错! 请检查网络连接或修改配置文件中 'proxy_url' 的内容。如果仍然无法下载，请手动下载 svg2pdf 。"
+            )
+            input_break()
+            return False
+        print("下载完成! 开始解压...")
+        try:
+            extract(file_name, ".")
+            os.remove(file_name)
+            print("解压完成!")
+            return True
+        except zipfile.BadZipFile:
+            print(
+                "解压失败! 链接可能已失效? 请尝试修改配置文件中 'svg2pdf_repo' 的内容。"
+            )
+            input_break()
+            return False
+
+    def check_svg2pdf(self):
+        if self.cfg2.swf2svg:
+            if not os.path.isfile("svg2pdf.exe") if os.name == "nt" else not os.path.isfile("svg2pdf"):
+                if platform.system() == "Windows" or platform.system() == "Linux" or platform.system() == "Darwin":
+                    if choose("检测到 svg2pdf 工具未下载，是否下载？ (Y/n): "):
+                        return self.download_svg2pdf()
+                    else:
+                        print("未下载 svg2pdf 工具，无法进行 SVG 转 PDF 操作。")
+                        return False
+                else:
+                    print("当前操作系统不支持 svg2pdf 工具，请自行编译安装：https://github.com/cmy2008/svg2pdf")
+                    return False
+            else:
+                return True
