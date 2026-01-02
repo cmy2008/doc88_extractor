@@ -16,6 +16,7 @@ class Config:
             "check_update": True,
             "swf2svg": False,
             "svgfontface": False,
+            "fix_displayrect": False,
             "clean": True,
             "get_more": False,
             "path_replace": True,
@@ -50,6 +51,7 @@ class Config:
         self.check_update = config_data["check_update"]
         self.swf2svg = config_data["swf2svg"]
         self.svgfontface = config_data["svgfontface"]
+        self.fix_displayrect = config_data["fix_displayrect"]
         self.clean = config_data["clean"]
         self.get_more = config_data["get_more"]
         self.path_replace = config_data["path_replace"]
@@ -77,6 +79,7 @@ class Config:
             "check_update": self.check_update,
             "swf2svg": self.swf2svg,
             "svgfontface": self.svgfontface,
+            "fix_displayrect": self.fix_displayrect,
             "clean": self.clean,
             "get_more": self.get_more,
             "path_replace": self.path_replace,

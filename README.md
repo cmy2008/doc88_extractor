@@ -63,6 +63,7 @@ python3 main.py
 | `check_update`     | 是否在启动时检查更新                                              | Always check updates on startup.                                              |
 | `swf2svg`          | 是否先转换到 SVG 再转到 PDF                                       | Convert swf files to svg first.                                               |
 | `svgfontface`      | （仅 swf2pdf 为 false 时有效）在 SVG 转换中是否转换字体来呈现文本 | Only works when swf2pdf is false; using font to show texts in SVG converting. |
+| `fix_displayrect`  | 是否修正 SWF 的画布大小                                           | Fix the swf files displayrect sizes                                           |
 | `clean`            | 是否保留中间文件                                                  | Keep intermediate files.                                                      |
 | `get_more`         | 是否始终通过扫描获取页面                                          | Always via scanning to get pages.                                             |
 | `path_replace`     | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
@@ -70,6 +71,8 @@ python3 main.py
 | `convert_workers`  | 转换文件的线程数                                                  | Number of threads for converting files.                                       |
 
 ### 注意事项 / Attention
+- 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致的转换问题
 - 使用 `swf2svg` 选项，也许会解决部分文档的字体形状问题（不能解决字体不全的问题，原始文件为了压缩大小，减去了未使用的字）
+- 使用 `swf2svg` 选项，而不使用 `svgfontface` 选项，由于省去了文本转换过程，可以大大加快转换速度
 - 若启用 `svgfontface` 选项，由于 [typst/svg2pdf](https://github.com/typst/svg2pdf) 的缺陷，将无法转换字体，会自动替换为默认字体
 - 若启用 `svgfontface` 选项，由于 [ffdec](https://github.com/jindrapetrik/jpexs-decompiler) 的缺陷，某些形状或文本会出现转换错误

@@ -290,13 +290,13 @@ class converter:
         except Exception as err:
             logw(str(err))
 
-    # 帧数量设置，弃用
-    '''
-        def set_swf(self, i: int):
-            return os.popen(
-                f"java -jar ffdec/ffdec.jar -header -set frameCount 1 \"{cfg2.swf_path}{i}.swf\" \"{cfg2.swf_path}{i}.swf\""
-            ).read()
-    '''
+    # 帧画布大小修正
+    def set_swf(self, i: int, w, h):
+        return subprocess.run(
+                ["java", "-jar", "ffdec/ffdec.jar", "-header", "-set", "width", f"{w}px", "-set", "height", f"{h}px", f"{cfg2.swf_path}{i}.swf", f"{cfg2.swf_path}{i}.swf"],
+                capture_output=True,
+                text=True,
+            )
 
     def swf2svg(self, i: int):
         print(f"SWF -> SVG converting worker {i} started.")
@@ -418,15 +418,23 @@ def convert(cfg: gen_cfg):
         print("!! 警告: 此过程可能会使用较高的 CPU 使用率，以及较长的时间。您可以在配置文件中修改线程数以平衡性能 !!")
     max_workers = cfg2.convert_workers
     doc = converter()
+    if cfg2.fix_displayrect:
+        print("Now start fixing swf displayrect, please wait...")
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for i in range(1, cfg.p_count + 1):
+                executor.submit(doc.set_swf, i, cfg.pageids[i-1].split("-")[1], cfg.pageids[i-1].split("-")[2])
     doc.divide_swfs(cfg2.convert_workers)
     if not cfg2.swf2svg:
+        print("Now start SWF -> PDF converting, please wait...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(0, max_workers):
                 executor.submit(doc.swf2pdf, i)
     else:
+        print("Now start SWF -> SVG converting, please wait...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(0, max_workers):
                 executor.submit(doc.swf2svg, i)
+        print("Now start SVG -> PDF converting, please wait...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(1, cfg.p_count + 1):
                 executor.submit(doc.svg2pdf, i)
