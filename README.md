@@ -36,7 +36,7 @@ pip3 install retrying pypdf requests
 - 若启用 swf2svg，程序将自动下载 swf2svg 以实现 SVG 到 PDF 的转换。若安装失败，可尝试从 [typst/svg2pdf](https://github.com/typst/svg2pdf) 编译。  
     If swf2svg is enabled, the tool will download swf2svg automatically to perform SVG-to-PDF conversion. if installation fails, try building it from [typst/svg2pdf](https://github.com/typst/svg2pdf).
 
-- 支持平台 / support platform:
+- 支持平台 / support platform:  
     Windows (x86_64) / Linux (x86_64/arm64) / MacOS (x86_64/arm64) / Android (arm64)
 
 ## 如何使用 / How to Use
