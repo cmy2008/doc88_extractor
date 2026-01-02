@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import os
-if __file__:
-    if os.path.dirname(__file__):
-        os.chdir(os.path.dirname(__file__))
+import sys
+
+# 设置程序目录
+if getattr(sys, 'frozen', False):
+    app_dir = os.path.dirname(sys.executable)
+else:
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+
+os.chdir(app_dir)
 from config import *
 
 print(f"DOC88 （预览）文档提取工具 V{cfg2.default_config['version']}")
