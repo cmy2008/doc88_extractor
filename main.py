@@ -319,10 +319,10 @@ class converter:
                         ospath(f"{dirpath}{f}/1.svg"), ospath(f"{cfg2.svg_path}{f[:-4]}.svg")
                     )
             # 删除ffdec的临时文件夹
-                    try:
-                        shutil.rmtree(ospath(f"{dirpath}"))
-                    except PermissionError:
-                        print("Can't delete temporary folder, maybe file is opened?")
+            try:
+                shutil.rmtree(ospath(f"{dirpath}"))
+            except PermissionError:
+                print("Can't delete temporary folder, maybe file is opened?")
             # 删除分组文件夹
             try:
                 shutil.rmtree(ospath(f"{cfg2.swf_path}{i}/"))
@@ -356,10 +356,10 @@ class converter:
                     )
                     self.pdflist.append(f[:-4])
             # 删除ffdec的临时文件夹
-                    try:
-                        shutil.rmtree(ospath(f"{dirpath}"))
-                    except PermissionError:
-                        print("Can't delete temporary folder, maybe file is opened?")
+            try:
+                shutil.rmtree(ospath(f"{dirpath}"))
+            except PermissionError:
+                print("Can't delete temporary folder, maybe file is opened?")
             # 删除分组文件夹
             try:
                 shutil.rmtree(ospath(f"{cfg2.swf_path}{i}/"))
