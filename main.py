@@ -385,7 +385,7 @@ class converter:
             #     write_to=str(ospath(f"{cfg2.pdf_path}{i}.pdf")),
             # )
             run=subprocess.run(
-                ["./svg2pdf", f"{cfg2.pdf_path}{i}.svg", f"{cfg2.pdf_path}{i}.pdf"], text=True, capture_output=True
+                ["./svg2pdf", f"{cfg2.svg_path}{i}.svg", f"{cfg2.pdf_path}{i}.pdf"], text=True, capture_output=True
             )
             self.pdflist.append(i)
         except FileNotFoundError:
