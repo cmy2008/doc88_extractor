@@ -41,6 +41,7 @@ import sys
 import json
 import re
 import shutil
+import subprocess
 from compressor import *
 from concurrent.futures import ThreadPoolExecutor
 from pypdf import PdfWriter
@@ -291,7 +292,7 @@ class converter:
                 ).read()
             else:
                 log = os.popen(
-                    "java -jar ffdec/ffdec.jar -config textExportExportFontFace=flase"
+                    "java -jar ffdec/ffdec.jar -config textExportExportFontFace=false"
                 ).read()
         except Exception as err:
             logw(str(err))
@@ -388,9 +389,9 @@ class converter:
                 ["./svg2pdf", f"{cfg2.svg_path}{i}.svg", f"{cfg2.pdf_path}{i}.pdf"], text=True, capture_output=True
             )
             self.pdflist.append(i)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             print("Can't convert this page! Skipping...")
-            logw(f"SVG to PDF converting error: {run.stderr or run.stdout}")
+            logw(f"SVG to PDF converting error: {e}")
 
     def makepdf(self):
         self.pdflist = sorted(self.pdflist, key=lambda x: int(x))
