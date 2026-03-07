@@ -4,8 +4,8 @@ import json
 class Config:
     def __init__(self, config_path="config.json"):
         self.default_config ={
-            "version": "1.9",
-            "ffdec_version": "version24.1.1",
+            "version": "2.0",
+            "ffdec_version": "version25.1.3",
             "o_dir_path": "docs/",
             "o_swf_path": "swf/",
             "o_pdf_path": "pdf/",
@@ -21,7 +21,8 @@ class Config:
             "get_more": False,
             "path_replace": True,
             "download_workers": 10,
-            "convert_workers": 5
+            "convert_workers": 5,
+            "pdf_scale": 2.0
         }
         self.config_path=config_path
         if not os.path.exists(config_path):
@@ -57,6 +58,7 @@ class Config:
         self.path_replace = config_data["path_replace"]
         self.download_workers = config_data["download_workers"]
         self.convert_workers = config_data["convert_workers"]
+        self.pdf_scale = config_data["pdf_scale"] if "pdf_scale" in config_data else 2.0
 
     def gen(self):        
         with open(self.config_path, 'w') as f:
@@ -84,7 +86,8 @@ class Config:
             "get_more": self.get_more,
             "path_replace": self.path_replace,
             "download_workers": self.download_workers,
-            "convert_workers": self.convert_workers
+            "convert_workers": self.convert_workers,
+            "pdf_scale": self.pdf_scale
         }
         with open(self.config_path, 'w') as f:
             json.dump(config_data, f, indent=4)

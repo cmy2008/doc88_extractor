@@ -69,6 +69,7 @@ python3 main.py
 | `path_replace`     | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
 | `download_workers` | 下载文件的线程数                                                  | Number of threads for downloading files.                                      |
 | `convert_workers`  | 转换文件的线程数                                                  | Number of threads for converting files.                                       |
+| `pdf_scale`        | 转换为 PDF 的缩放大小                                             | Scale size of PDF converting                                         |            
 
 ### 注意事项 / Attention
 - 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致的转换问题
@@ -76,3 +77,4 @@ python3 main.py
 - 使用 `swf2svg` 选项，而不使用 `svgfontface` 选项，由于省去了文本转换过程，可以大大加快转换速度
 - 若启用 `svgfontface` 选项，由于 [typst/svg2pdf](https://github.com/typst/svg2pdf) 的缺陷，将无法转换字体，会自动替换为默认字体
 - 若启用 `svgfontface` 选项，由于 [ffdec](https://github.com/jindrapetrik/jpexs-decompiler) 的缺陷，某些形状或文本会出现转换错误
+- 为防止转换出的部分字体过粗，`pdf_scale` 被默认设置为 `2.0`，这会稍微减缓转换速度，如需加快转换速度，可将此项设置为 `1.0` 或更小的值（对于粗体或本身较粗的字体影响大，对细体几乎无影响），若仍然出现部分字体变粗，可尝试修改为更大的值（`2.0`-`5.0`）

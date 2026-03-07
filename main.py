@@ -349,7 +349,7 @@ class converter:
         try:
             dirpath = cfg2.pdf_path + str(i) + "/"
             run = subprocess.run(
-                ["java", "-jar", "ffdec/ffdec.jar", "-format", "frame:pdf", "-select", "1", "-export", "frame", dirpath, f"{cfg2.swf_path}{i}"],
+                ["java", "-jar", "ffdec/ffdec.jar", "-format", "frame:pdf", "-zoom", str(cfg2.pdf_scale), "-select", "1", "-export", "frame", dirpath, f"{cfg2.swf_path}{i}"],
                 capture_output=True,
                 text=True,
             )
@@ -400,18 +400,18 @@ class converter:
                 self.pdf, str(ospath(f"{cfg2.pdf_path}{i}.pdf"))
             )
     # 根据工作流数量平均分配 SWF 文件到各组文件夹中
-    def divide_swfs(self, page_count: int):
-        try:
-            for i in range(0, cfg2.convert_workers):
-                os.makedirs(ospath(f"{cfg2.swf_path}{i}/"))
-        except FileExistsError:
-            pass
+    def divide_swfs(self, count: int):
         file_index = os.listdir(ospath(cfg2.swf_path))
         swf_files = sorted([f for f in file_index if f.endswith('.swf')], key=lambda x: int(x[:-4]))
         for idx, swf_file in enumerate(swf_files):
-            group_num = idx % page_count
+            group_num = idx % count
+            group_path = ospath(f"{cfg2.swf_path}{group_num}/")
+            try:
+                os.makedirs(group_path)
+            except FileExistsError:
+                pass
             src_path = os.path.join(ospath(cfg2.swf_path), swf_file)
-            dest_path = os.path.join(ospath(f"{cfg2.swf_path}{group_num}/"), swf_file)
+            dest_path = os.path.join(group_path, swf_file)
             shutil.copy(src_path, dest_path)
 
 
