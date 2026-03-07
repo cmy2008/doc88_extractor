@@ -10,7 +10,7 @@ class Config:
             "o_swf_path": "swf/",
             "o_pdf_path": "pdf/",
             "o_svg_path": "svg/",
-            "proxy_url": "https://ghproxy.cn/",
+            "proxy_url": "https://gh.llkk.cc/",
             "ffdec_repo": "jindrapetrik/jpexs-decompiler",
             "svg2pdf_repo": "cmy2008/svg2pdf",
             "check_update": True,
