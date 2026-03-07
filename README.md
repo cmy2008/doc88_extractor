@@ -69,7 +69,7 @@ python3 main.py
 | `path_replace`     | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
 | `download_workers` | 下载文件的线程数                                                  | Number of threads for downloading files.                                      |
 | `convert_workers`  | 转换文件的线程数                                                  | Number of threads for converting files.                                       |
-| `pdf_scale`        | 转换为 PDF 的缩放大小                                             | Scale size of PDF converting                                         |            
+| `pdf_scale`        | 转换为 PDF 的缩放大小                                             | Scale of PDF  converting.                                         |            
 
 ### 注意事项 / Attention
 - 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致的转换问题
