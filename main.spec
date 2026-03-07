@@ -6,7 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['chardet','charset_normalizer'],
+    hiddenimports=['chardet'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -19,9 +19,9 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    [],
+    [('W ignore', None, 'OPTION')],
     exclude_binaries=True,
-    name='main',
+    name='doc88_extractor',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -40,5 +40,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='doc88_extractor',
+    name='main',
 )
