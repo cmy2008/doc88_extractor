@@ -1,5 +1,3 @@
-# 这是啥 WHAT IS THIS
-
 ## 简介 / Introduction
 
 一个可以完整提取道客巴巴预览文档（非截图）的工具。  
