@@ -206,6 +206,57 @@ class Update:
                 exit()
             return False
     
+    def ffdec_configure(self):
+        # 配置 ffdec 临时目录
+        if cfg2.replace_jna_tmp_path:
+            if not os.path.exists(ospath("ffdec/jna_temp/")):
+                try:
+                    os.makedirs(ospath("ffdec/jna_temp/"))
+                except FileNotFoundError:
+                    print("Error when creating temporary folder for ffdec, maybe permission denied?")
+            try:
+                subprocess.run(
+                    ["java", "-jar", "ffdec/ffdec.jar", "-config", f"jnaTempDirectory={os.path.abspath(ospath('ffdec/jna_temp/'))}"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+            except Exception as err:
+                logw(str(err))
+                return False
+        # 待 ffdec 修复
+        '''
+        else:
+            try:
+                subprocess.run(
+                    ["java", "-jar", "ffdec/ffdec.jar", "-config", 'jnaTempDirectory=""'],
+                    capture_output=True,
+                    text=True
+                )
+            except Exception as err:
+                logw(str(err))
+        '''
+        # 配置 font-face
+        try:
+            if cfg2.svgfontface:
+                subprocess.run(
+                    ["java", "-jar", "ffdec/ffdec.jar", "-config", "textExportExportFontFace=true"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+            else:
+                subprocess.run(
+                    ["java", "-jar", "ffdec/ffdec.jar", "-config", "textExportExportFontFace=false"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+        except Exception as err:
+            logw(str(err))
+            return False
+        return True
+    
     def download_svg2pdf(self):
         try:
             info = github_release(self.cfg2.svg2pdf_repo)

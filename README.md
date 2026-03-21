@@ -55,19 +55,20 @@ python3 main.py
 ### 说明 / Description
 默认情况下配置在 `config.json` 文件中，主要说明如下：
 
-| 键名 / Key         | 说明                                                              | Description                                                                   |
-| ------------------ | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `proxy_url`        | Github 代理服务的 URL                                             | The URL of Github's proxy service.                                            |
-| `check_update`     | 是否在启动时检查更新                                              | Always check updates on startup.                                              |
-| `swf2svg`          | 是否先转换到 SVG 再转到 PDF                                       | Convert swf files to svg first.                                               |
-| `svgfontface`      | （仅 swf2pdf 为 false 时有效）在 SVG 转换中是否转换字体来呈现文本 | Only works when swf2pdf is false; using font to show texts in SVG converting. |
-| `fix_displayrect`  | 是否修正 SWF 的画布大小                                           | Fix the swf files displayrect sizes                                           |
-| `clean`            | 是否保留中间文件                                                  | Keep intermediate files.                                                      |
-| `get_more`         | 是否始终通过扫描获取页面                                          | Always via scanning to get pages.                                             |
-| `path_replace`     | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
-| `download_workers` | 下载文件的线程数                                                  | Number of threads for downloading files.                                      |
-| `convert_workers`  | 转换文件的线程数                                                  | Number of threads for converting files.                                       |
-| `pdf_scale`        | 转换为 PDF 的缩放大小                                             | Scale of PDF  converting.                                         |            
+| 键名 / Key             | 说明                                                              | Description                                                                   |
+| ---------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `proxy_url`            | Github 代理服务的 URL                                             | The URL of Github's proxy service.                                            |
+| `check_update`         | 是否在启动时检查更新                                              | Always check updates on startup.                                              |
+| `swf2svg`              | 是否先转换到 SVG 再转到 PDF                                       | Convert swf files to svg first.                                               |
+| `svgfontface`          | （仅 swf2pdf 为 false 时有效）在 SVG 转换中是否转换字体来呈现文本 | Only works when swf2pdf is false; using font to show texts in SVG converting. |
+| `fix_displayrect`      | 是否修正 SWF 的画布大小                                           | Fix the swf files displayrect sizes                                           |
+| `clean`                | 是否保留中间文件                                                  | Keep intermediate files.                                                      |
+| `get_more`             | 是否始终通过扫描获取页面                                          | Always via scanning to get pages.                                             |
+| `path_replace`         | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
+| `replace_jna_tmp_path` | 是否替换 ffdec 的临时目录                                         | Replace ffdec temp directory.                                                 |
+| `download_workers`     | 下载文件的线程数                                                  | Number of threads for downloading files.                                      |
+| `convert_workers`      | 转换文件的线程数                                                  | Number of threads for converting files.                                       |
+| `pdf_scale`            | 转换为 PDF 的缩放大小                                             | Scale of PDF  converting.                                                     |
 
 ### 注意事项 / Attention
 - 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致的转换问题

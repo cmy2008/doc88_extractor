@@ -37,7 +37,6 @@ print(
             print("GTK runtime not found, maybe not install?")
     import cairosvg
 '''
-import sys
 import json
 import re
 import shutil
@@ -114,7 +113,7 @@ def init(config: dict) -> None:
         os.makedirs(ospath(cfg2.svg_path))
         os.makedirs(ospath(cfg2.pdf_path))
     except:
-        print("")
+        pass
 
 
 def main(encoded_str, more=False):
@@ -285,17 +284,6 @@ class converter:
     def __init__(self) -> None:
         self.pdf = PdfWriter()
         self.pdflist = []
-        try:
-            if cfg2.svgfontface:
-                log = os.popen(
-                    "java -jar ffdec/ffdec.jar -config textExportExportFontFace=true"
-                ).read()
-            else:
-                log = os.popen(
-                    "java -jar ffdec/ffdec.jar -config textExportExportFontFace=false"
-                ).read()
-        except Exception as err:
-            logw(str(err))
 
     # 帧画布大小修正
     def set_swf(self, i: int, w, h):
@@ -517,6 +505,15 @@ if __name__ == "__main__":
     if cfg2.check_update:
         update.check_update()
     update.upgrade()
+    if not update.ffdec_configure():
+        print("ffdec 配置失败！")
+        print("请尝试：\n1. 检查 Java 是否正常并使用了推荐版本\n2. 检查 ffdec 是否安装正确且能正常运行")
+        if os.name == "nt":
+            print("3. 删除 ffdec 的配置文件（通常在 %APPDATA%\\JPEXS\\FFDec\\config.toml）后重试")
+        else:
+            print("3. 删除 ffdec 的配置文件后重试")
+        input_break()
+        exit()
     if cfg2.swf2svg:
         print(
             "使用 SVG 转换功能建议同时关闭 font-face 功能，否则将会导致字体丢失，若只需要 SVG 文件可关闭清理功能，文件将会生成到对应文档 ID 目录下的 svg 目录"

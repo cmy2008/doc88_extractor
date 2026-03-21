@@ -13,6 +13,7 @@ class Config:
             "proxy_url": "https://gh.llkk.cc/",
             "ffdec_repo": "jindrapetrik/jpexs-decompiler",
             "svg2pdf_repo": "cmy2008/svg2pdf",
+            "replace_jna_tmp_path": True,
             "check_update": True,
             "swf2svg": False,
             "svgfontface": False,
@@ -49,6 +50,7 @@ class Config:
         self.proxy_url = config_data["proxy_url"]
         self.ffdec_repo = config_data["ffdec_repo"]
         self.svg2pdf_repo = config_data["svg2pdf_repo"]
+        self.replace_jna_tmp_path = config_data["replace_jna_tmp_path"]
         self.check_update = config_data["check_update"]
         self.swf2svg = config_data["swf2svg"]
         self.svgfontface = config_data["svgfontface"]
@@ -78,6 +80,7 @@ class Config:
             "proxy_url": self.proxy_url,
             "ffdec_repo": self.ffdec_repo,
             "svg2pdf_repo": self.svg2pdf_repo,
+            "replace_jna_tmp_path": self.replace_jna_tmp_path,
             "check_update": self.check_update,
             "swf2svg": self.swf2svg,
             "svgfontface": self.svgfontface,
