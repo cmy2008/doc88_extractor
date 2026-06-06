@@ -2,7 +2,7 @@
 
 import time
 import os
-import requests
+from curl_cffi import requests
 import zipfile
 import tarfile
 import subprocess
@@ -63,7 +63,7 @@ def get_request(url: str):
         "Content-Type": "text/html; charset=utf-8",
         "Referer": "https://www.doc88.com/",
     }
-    return requests.get(url, headers=headers)
+    return requests.get(url, headers=headers, impersonate="edge101")
 
 
 def write_file(data, path):

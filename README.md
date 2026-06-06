@@ -21,7 +21,7 @@ A tool to extract and convert doc88 documents (non-screenshot).
 安装依赖：
 
 ```bash
-pip3 install retrying pypdf requests
+pip3 install retrying pypdf requests curl_cffi
 ```
 
 ### Java

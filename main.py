@@ -501,7 +501,8 @@ if __name__ == "__main__":
     if not update.check_java():
         input_break()
         exit()
-    update.check_ffdec_update()
+    if cfg2.check_update or not os.path.isfile("ffdec/ffdec.jar"):
+        update.check_ffdec_update()
     if cfg2.check_update:
         update.check_update()
     update.upgrade()
