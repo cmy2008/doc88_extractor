@@ -48,42 +48,38 @@ from gen_cfg import *
 from get_more import *
 from utils import *
 from updater import *
+from ebt_import import *
 
-class get_cfg:
-    def __init__(self, url: str) -> None:
-        if url.find("doc88.com/p-") == -1 and url.find("doc88.piglin.eu.org/p-") == -1:
-            raise Exception("Invalid URL!")
-        self.url = url
-        self.content = ""
-        self.data = ""
-        self.sta = 0
-        if not self.get_main():
+    
+def decode_data(encode_data) -> dict:
+    try:
+        return json.loads(decode(encode_data))
+    except json.decoder.JSONDecodeError:
+        raise Exception("Can't read data!")
+    except (ValueError, UnicodeDecodeError):
+        raise Exception("Can't read data! Maybe keys were changed?")
+
+def get_main_from_url(url):
+    if url.find("doc88.com/p-") == -1 and url.find("doc88.piglin.eu.org/p-") == -1:
+        raise Exception("Invalid URL!")
+    request = get_request(url, referer=True, cffi=True)
+    if request.status_code == 404:
+        raise Exception("404 Not found!")
+    content = request.text
+    data = re.search(r"m_main.init\(\".*\"\);", content)
+    if data == None:
+        if re.search("网络环境安全验证", content):
+            print("WAF detected!")
             if choose("Do you want to use CDN?(Y/n): "):
-                self.__init__(
-                    "https://doc88.piglin.eu.org" + url[url.find("doc88.com/") + 9 :]
-                )
-                return None
-        return None
-
-    def req(self):
-        request = get_request(self.url)
-        if request.status_code == 404:
-            self.sta = 1
-            raise Exception("404 Not found!")
-        self.content = request.text
-
-    def get_main(self):
-        self.req()
-        data = re.search(r"m_main.init\(\".*\"\);", self.content)
-        if data == None:
-            if re.search("网络环境安全验证", self.content):
-                print("WAF detected!")
+                url = url.replace("www.doc88.com", "doc88.piglin.eu.org")
+                return get_main_from_url(url)
+            else:
                 return False
-            raise Exception("Config data not found! May be deleted?")
-        c = data.span()
-        self.data = self.content[c[0] + 13 : c[1] - 3]
-        return True
-
+        else:
+            raise Exception("Can't find data in this page! Please try another.")
+    c = data.span()
+    encode_data = content[c[0] + 13 : c[1] - 3]
+    return decode_data(encode_data)
 
 def append_pdf(pdf: PdfWriter, file: str):
     pdf.append(ospath(file))
@@ -116,16 +112,9 @@ def init(config: dict) -> None:
         pass
 
 
-def main(encoded_str, more=False):
-    try:
-        config = json.loads(decode(encoded_str))
-    except json.decoder.JSONDecodeError:
-        print("Can't read!")
-        return False
-    except (ValueError, UnicodeDecodeError):
-        print("Can't read! Maybe keys were changed?")
-        return False
-    init(config)
+def main(config, more=False, initial=True):
+    if initial:
+        init(config)
     cfg = gen_cfg(config)
     if os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
         cfg = gen_cfg(json.loads(read_file(f"{cfg2.dir_path}index.json")))
@@ -152,14 +141,14 @@ def main(encoded_str, more=False):
                 download(
                     get_request(
                         "https://www.doc88.com/doc.php?act=download&pcode=" + cfg.p_code
-                    ).text,
+                    , referer=True, cffi=True).text,
                     file_path,
                 )
                 print("Saved file to " + file_path)
                 return True
             except Exception as err:
-                print("Downlaod error: " + str(err))
-                logw("Downlaod error: " + str(err))
+                print("Download error: " + str(err))
+                logw("Download error: " + str(err))
         else:
             print("Continuing...")
     if more:
@@ -272,12 +261,12 @@ def get_swf(cfg: gen_cfg):
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.pk, i)
     if not down.downloaded:
-        raise Exception("Downlaod error")
+        raise Exception("Download error")
     print("Making pages...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.makeswf, i)
-    print(f"Donload done. (total page: {cfg.p_count})")
+    print(f"Download done. (total page: {cfg.p_count})")
 
 # TODO: 移除 cfg2 全局变量
 class converter:
@@ -458,39 +447,62 @@ def clean(cfg2):
 
 class mode:
     def __init__(self) -> None:
-        self.encode = ""
+        return None
 
-    def url(self):
+    def cli(self):
+        user_input = input("请输入：").strip()
+        if user_input.startswith("http"):
+            return self.url(user_input)
+        if user_input.isdigit():
+            return self.pcode(user_input)
+        elif os.path.isfile(ospath(user_input)):
+            if user_input.endswith(".xdf"):
+                return self.dirs(user_input)
+            else:
+                print("错误的文件类型！")
+                return False
+        elif os.path.isdir(ospath(user_input)):
+            try:
+                if any(f.endswith(".ebt") for f in os.listdir(ospath(user_input))):
+                    return self.dirs(user_input)
+                else:
+                    print("该文件夹内没有ebt文件！")
+                    return False
+            except PermissionError:
+                print("无权访问该文件夹！")
+                return False
+        else:
+            print("无效输入！")
+            return False
+    def url(self, url):
         try:
-            url = input("请输入网址：")
-        except KeyboardInterrupt:
-            exit()
-        try:
-            return main(get_cfg(url).data, cfg2.get_more)
+            return main(get_main_from_url(url), cfg2.get_more)
         except Exception as Err:
             print(Err)
             return False
 
-    def pcode(self):
+    def pcode(self, p_code=None):
         try:
-            p_code = input("请输入id：")
-        except KeyboardInterrupt:
-            exit()
-        try:
-            return main(
-                get_cfg(f"https://www.doc88.com/p-{p_code}.html").data, cfg2.get_more
-            )
+            return self.url(f"https://www.doc88.com/p-{p_code}.html")
         except Exception as Err:
             print(Err)
             return False
 
-    def data(self):
+    def dirs(self, dir_path):
         try:
-            data = input("请输入init_data：")
-        except KeyboardInterrupt:
-            exit()
-        try:
-            return main(data, cfg2.get_more)
+            ebts = import_ebt(dir_path)
+            config = build_cfg(*ebts)
+            cfg = gen_cfg(config)
+            init(config)
+            # 复制文件到对应目录并生成下载缓存列表
+            progress = downloader(cfg)
+            for ph in ebts[0]:
+                shutil.copy(ospath(ph["path"]), ospath(cfg2.dir_path))
+                progress.save_progress("ph", ph["level"])
+            for pk in ebts[1]:
+                shutil.copy(ospath(pk["path"]), ospath(cfg2.dir_path))
+                progress.save_progress("pk", pk["page"])
+            return main(config, cfg2.get_more, False)
         except Exception as Err:
             print(Err)
             return False
@@ -529,15 +541,11 @@ if __name__ == "__main__":
         debug = True
     else:
         debug = False
-    if "-p" in a:
-        exe = user.pcode
-    elif "-d" in a:
-        exe = user.data
-    else:
-        exe = user.url
+    # TODO: 命令传参；XDF文件支持
+    print("支持输入网址/文档ID/含有ebt文件的文件夹路径")
+    print("输入示例：\n网址：https://www.doc88.com/p-12345678.html\n文档ID：12345678\n含有ebt文件的文件夹路径：./ebtfiles/")
     while True:
-        if exe():
-            update.gen_indexs()
+        if user.cli():
             if cfg2.clean:
                 try:
                     clean(cfg2)

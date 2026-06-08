@@ -2,7 +2,8 @@
 
 import time
 import os
-from curl_cffi import requests
+from curl_cffi import requests as requests_cffi
+import requests
 import zipfile
 import tarfile
 import subprocess
@@ -57,13 +58,16 @@ def logw(t: str):
         file.write(log)
 
 
-def get_request(url: str):
+def get_request(url: str, referer = True, cffi = False):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.39",
         "Content-Type": "text/html; charset=utf-8",
-        "Referer": "https://www.doc88.com/",
+        "Referer": "https://www.doc88.com/" if referer else "",
     }
-    return requests.get(url, headers=headers, impersonate="edge101")
+    if cffi:
+        return requests_cffi.get(url, headers=headers, impersonate="edge101")
+    else:
+        return requests.get(url, headers=headers)
 
 
 def write_file(data, path):
@@ -112,7 +116,7 @@ def input_break():
 class github_release:
     def __init__(self, repo: str, n: int = -1) -> None:
         self.releases = {}
-        version_info = get_request(f"https://api.github.com/repos/{repo}/releases/latest").json()
+        version_info = get_request(f"https://api.github.com/repos/{repo}/releases/latest", referer=False, cffi=False).json()
         self.latest_version = version_info["tag_name"]
         if n != -1:
             self.download_url = version_info['assets'][n]['browser_download_url']

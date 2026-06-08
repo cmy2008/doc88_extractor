@@ -112,7 +112,7 @@ class get_more:
                     self.ids.append(f"{headsize+offset}-{size-offset}")
                     print(f"finish:{headsize+offset}-{size-offset}")
                 else:
-                    print("Except ending, is the file too big?")
+                    print("Unexpected ending, is the file too big?")
                 print(f"total page:{len(self.ids)}")
                 return True
 
