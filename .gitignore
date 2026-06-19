@@ -19,3 +19,4 @@ docin.py
 *.svg
 *.pdf
 svg2pdf*
+*.xdf

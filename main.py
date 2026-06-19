@@ -450,7 +450,10 @@ class mode:
         return None
 
     def cli(self):
-        user_input = input("请输入：").strip()
+        try:
+            user_input = input("请输入：").strip()
+        except KeyboardInterrupt:
+            exit()
         if user_input.startswith("http"):
             return self.url(user_input)
         if user_input.isdigit():
@@ -472,8 +475,13 @@ class mode:
                 print("无权访问该文件夹！")
                 return False
         else:
-            print("无效输入！")
-            return False
+            try:
+                config = decode_data(user_input)
+                main(config, cfg2.get_more)
+                return True
+            except Exception as Err:
+                print("无效输入！")
+                return False
     def url(self, url):
         try:
             return main(get_main_from_url(url), cfg2.get_more)
@@ -542,8 +550,10 @@ if __name__ == "__main__":
     else:
         debug = False
     # TODO: 命令传参；XDF文件支持
-    print("支持输入网址/文档ID/含有ebt文件的文件夹路径")
-    print("输入示例：\n网址：https://www.doc88.com/p-12345678.html\n文档ID：12345678\n含有ebt文件的文件夹路径：./ebtfiles/")
+    print("支持输入网址/文档ID/含有ebt文件的文件夹路径/m_main数据")
+    print("注：浏览器控制台输入以下代码并回车即可一键复制m_main数据")
+    print("(match = document.documentElement.outerHTML.match(/m_main\\.init\\(\"([^\"]*)\"\\);/)) ? (copy(match[1]), console.log(\'复制成功\')) : console.log(\'未找到\')")
+    print("输入示例：\n网址：https://www.doc88.com/p-12345678.html\n文档ID：12345678\n含有ebt文件的文件夹路径：./ebtfiles/\nm_main数据：eyJwX2NvZGVz...")
     while True:
         if user.cli():
             if cfg2.clean:
