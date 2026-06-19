@@ -45,8 +45,21 @@ pip3 install retrying pypdf requests curl_cffi
 python3 main.py
 ```
 
-- 控制台输入网址并回车。  
-    Enter the URL in the console.
+- 控制台输入以下任意一种内容并回车：  
+    Enter any of the following into the console and press Enter:
+    1. doc88 链接(URL)
+    2. 文档 ID(链接中“p-”后面的数字)
+    3. 含有 ebt 文件的文件夹路径(需要原始文件名)
+    4. m_main 数据(base64 变种格式)
+
+- 获取 m_main 数据的方法：
+    1. 打开文档网页
+    2. 在空白位置（不能在文档里）右键，选择“检查”
+    3. 转到“控制台”选项卡
+    4. 输入以下内容并回车，即可一键复制 m_main 数据
+    ```js
+    (match = document.documentElement.outerHTML.match(/m_main\.init\("([^"]*)"\);/)) ? (copy(match[1]), console.log('复制成功')) : console.log('未找到')
+    ```
 - 首次运行会生成配置文件，检测更新并下载 ffdec。  
     On first run, there will be a configuration file `config.json`, then check the updates and download the ffdec.
 
