@@ -376,6 +376,8 @@ class converter:
             self.pdf = append_pdf(
                 self.pdf, str(ospath(f"{cfg2.pdf_path}{i}.pdf"))
             )
+            if not cfg2.swf2svg:
+                self.pdf.pages[-1].scale_by(1 / cfg2.pdf_scale)
     # 根据工作流数量平均分配 SWF 文件到各组文件夹中
     def divide_swfs(self, count: int):
         file_index = os.listdir(ospath(cfg2.swf_path))
