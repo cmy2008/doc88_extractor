@@ -20,3 +20,4 @@ docin.py
 *.pdf
 svg2pdf*
 *.xdf
+*.hexproj

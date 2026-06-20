@@ -26,9 +26,9 @@ pip3 install retrying pypdf requests curl_cffi
 
 ### Java
 
-- 需要安装 Java 才能进行文档转换（推荐 Java 17）:
-    <br>Requires Java (recommended: version 17):
-    <br>[Microsoft Build of OpenJDK 17 for Windows x64](https://aka.ms/download-jdk/microsoft-jdk-17.0.14-windows-x64.msi)
+- 需要安装 Java 才能进行文档转换（推荐 Java 17）:  
+    Requires Java (recommended: version 17):  
+    [Microsoft Build of OpenJDK 17 for Windows x64](https://aka.ms/download-jdk/microsoft-jdk-17.0.14-windows-x64.msi)
 
 ### SVG 转换 / SVG Converting
 - 若启用 swf2svg，程序将自动下载 swf2svg 以实现 SVG 到 PDF 的转换。若安装失败，可尝试从 [typst/svg2pdf](https://github.com/typst/svg2pdf) 编译。  
@@ -47,18 +47,17 @@ python3 main.py
 
 - 控制台输入以下任意一种内容并回车：  
     Enter any of the following into the console and press Enter:
-    1. doc88 链接(URL)
-    2. 文档 ID(链接中“p-”后面的数字)
-    3. 含有 ebt 文件的文件夹路径(需要原始文件名)
-    4. m_main 数据(base64 变种格式)
+1. doc88 链接 / Doc88 URL
+2. 文档 ID(链接中 `p-` 后面的数字) / Document ID (the number after `p-` in URL)
+3. 含有 ebt 文件的文件夹路径(需要原始文件名) / Folder path containing ebt files (raw filenames required)
+4. `m_main` 数据(base64 变种格式) / `m_main` data
 
-- 获取 m_main 数据的方法：
-    1. 打开文档网页
-    2. 在空白位置（不能在文档里）右键，选择“检查”
-    3. 转到“控制台”选项卡
-    4. 输入以下内容并回车，即可一键复制 m_main 数据
+- 获取 `m_main` 数据的方法： / How to get the `m_main` data:
+1. 浏览器打开文档网页 / Open the document page in browser
+2. 打开 `开发者工具`，转到 `控制台` 选项卡 / 	Open `DevTools` and switch to the `Console` tab.
+3. 执行以下代码，即可一键复制 `m_main` 数据 / Run the code below to copy the `m_main` data in a single click.
     ```js
-    (match = document.documentElement.outerHTML.match(/m_main\.init\("([^"]*)"\);/)) ? (copy(match[1]), console.log('复制成功')) : console.log('未找到')
+    (match = document.documentElement.outerHTML.match(/m_main\.init\("([^"]*)"\);/)) ? (copy(match[1]), console.log('Success.')) : console.log('Not found.')
     ```
 - 首次运行会生成配置文件，检测更新并下载 ffdec。  
     On first run, there will be a configuration file `config.json`, then check the updates and download the ffdec.

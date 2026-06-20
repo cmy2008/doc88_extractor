@@ -135,6 +135,7 @@ class Update:
         if self.cfg2.version < "1.7":
             print("检测到旧版本资源文件，正在更新...")
             self.resource_update()
+        self.gen_indexs()
         self.cfg2.version = self.cfg2.default_config["version"]
         self.cfg2.save()
     
@@ -157,7 +158,6 @@ class Update:
                     shutil.rmtree(subdir)
                 except Exception as e:
                     print(f"资源文件迁移失败: {subdir} -> {e}")
-        self.gen_indexs()
 
     def gen_indexs(self):
         indexs = {}
