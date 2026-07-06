@@ -43,7 +43,7 @@ import shutil
 import subprocess
 from compressor import *
 from concurrent.futures import ThreadPoolExecutor
-from pypdf import PdfWriter
+from pypdf import PdfWriter,errors
 from gen_cfg import *
 from get_more import *
 from utils import *
@@ -82,7 +82,16 @@ def get_main_from_url(url):
     return decode_data(encode_data)
 
 def append_pdf(pdf: PdfWriter, file: str):
-    pdf.append(ospath(file))
+    if isinstance(file, str) and os.path.exists(file) and os.path.getsize(file) > 0:
+        try:
+            pdf.append(ospath(file))
+            return pdf
+        except errors.EmptyFileError:
+            print(f"跳过损坏的文件: {file}")
+            logw(f"跳过损坏的文件: {file}")
+    else:
+        print(f"跳过不存在或为空的文件: {file}")
+        logw(f"跳过不存在或为空的文件: {file}")
     return pdf
 
 
