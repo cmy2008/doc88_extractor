@@ -71,7 +71,7 @@ class GetMore:
         response = get_request(url, cffi=False, content_type="", stream=True)
         if response.status_code != 200:
             return False
-
+        expected_ending = False
         with open(ospath(f"{self.filepath}cache.ebt"), "wb") as file:
             size = 0
             offset = 0
@@ -118,7 +118,7 @@ class GetMore:
                             status = False
                     size += file.write(chunk)
             except requests.exceptions.ChunkedEncodingError:
-                pass
+                expected_ending = True
 
             if self._test():
                 write_file(
@@ -130,7 +130,10 @@ class GetMore:
                 self.ids.append(f"{headsize + offset}-{size - offset}")
                 print(f"finish:{headsize + offset}-{size - offset}")
             else:
-                print("Unexpected ending, is the file too big?")
+                if not expected_ending:
+                    print("Unexpected ending, is the file too big?")
+                else:
+                    print("Error in the last page, maybe the header is changed?")
             print(f"total page:{len(self.ids)}")
             # 释放扫描过程中积累的大缓冲区
             self.PK_data.clear()
