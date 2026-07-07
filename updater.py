@@ -108,9 +108,9 @@ class Update:
                     else:
                         print(text2)
                         return False
-            else:
-                print(text2)
-                return False
+                else:
+                    print(text2)
+                    return False
 
     def ffdec_update(self):
         if os.path.isfile("ffdec/ffdec.jar"):
