@@ -4,6 +4,7 @@
 通过扫描 CDN 上的连续数据块，尝试获取预览中不可见的额外页面。
 """
 
+import gc
 import json
 import struct
 import requests
@@ -48,6 +49,9 @@ class GetMore:
         write_file(self.PH_data, f"{self.filepath}{self.cfg.ph(self.level).name}")
         if self._scan(self.level):
             return self._get_newpageids()
+        # _scan 失败，清理缓冲区
+        self.PK_data.clear()
+        self.PH_data = b""
         return None
 
     def _scan(self, scan_range: int = 0) -> bool:
@@ -128,11 +132,16 @@ class GetMore:
             else:
                 print("Unexpected ending, is the file too big?")
             print(f"total page:{len(self.ids)}")
+            # 释放扫描过程中积累的大缓冲区
+            self.PK_data.clear()
+            self.PH_data = b""
+            gc.collect()
             return True
 
     def _test(self) -> bool:
         """验证当前 PK 数据是否可成功解压为 SWF。"""
-        pk = self.comp._decompress_ebt_pk(bytes(self.PK_data))
+        # 直接传入 bytearray，避免 bytes() 产生额外内存拷贝
+        pk = self.comp._decompress_ebt_pk(self.PK_data)
         ph = self.comp._decompress_ebt_ph(self.PH_data)
         if pk:
             write_file(

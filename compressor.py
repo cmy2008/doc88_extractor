@@ -20,7 +20,10 @@ class Compressor:
         swf = self._makeup(ph, pk)
         # 设置帧数量为 1
         swf[19] = 1
+        # 释放中间缓冲区，减少内存峰值
+        del ph, pk
         write_file(swf, path)
+        del swf
 
     @staticmethod
     def _makeup(ebt_ph: bytearray, ebt_pk: bytearray) -> bytearray:

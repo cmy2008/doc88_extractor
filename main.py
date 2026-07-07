@@ -5,6 +5,7 @@
   输入 URL/ID/m_main 数据 → 下载 SWF 资源 → 转换为 PDF（可选 SVG 中转）。
 """
 
+import gc
 import json
 import os
 import re
@@ -224,6 +225,7 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
             )
             print(f"成功扫描页数：{cfg.p_count}")
             del newpageids
+            gc.collect()
             time.sleep(2)
         else:
             print("普通下载模式...")
@@ -233,6 +235,7 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
         if not more:
             get_swf(cfg)
         if not _DEBUG:
+            gc.collect()
             convert(cfg)
             del cfg
         return True
@@ -321,11 +324,13 @@ def get_swf(cfg: GenConfig) -> None:
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.ph_nums() + 1):
             executor.submit(down.download_ph, i)
+    gc.collect()
 
     print("Downloading PK...")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.download_pk, i)
+    gc.collect()
 
     if not down.downloaded:
         raise Exception("Download error")
@@ -334,6 +339,10 @@ def get_swf(cfg: GenConfig) -> None:
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(1, cfg.p_count + 1):
             executor.submit(down.make_swf, i)
+    gc.collect()
+
+    # 清理下载进度缓存
+    down.progress.clear()
 
     print(f"Download done. (total page: {cfg.p_count})")
 
@@ -545,28 +554,37 @@ def convert(cfg: GenConfig) -> None:
             for i in range(1, cfg.p_count + 1):
                 parts = cfg.pageids[i - 1].split("-")
                 executor.submit(doc.fix_displayrect, i, parts[1], parts[2])
+        gc.collect()
 
     doc.divide_swfs(cfg2.convert_workers)
+    gc.collect()
 
     if not cfg2.swf2svg:
         print("Now start SWF -> PDF converting, please wait...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(max_workers):
                 executor.submit(doc.swf2pdf, i)
+        gc.collect()
     else:
         print("Now start SWF -> SVG converting, please wait...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(max_workers):
                 executor.submit(doc.swf2svg, i)
+        gc.collect()
         print("Now start SVG -> PDF converting, please wait...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for i in range(1, cfg.p_count + 1):
                 executor.submit(doc.svg2pdf, i)
+        gc.collect()
 
     print("Now start making pdf, please wait...")
     doc.makepdf()
     pdf_name = cfg2.o_dir_path + special_path(cfg.p_name) + ".pdf"
     doc.pdf.write(str(ospath(pdf_name)))
+    # 释放 PdfWriter 持有的所有页面数据
+    del doc.pdf
+    doc.pdflist.clear()
+    gc.collect()
     print("转换完成！")
     print("已将文件保存至 " + pdf_name)
     print(
@@ -606,7 +624,8 @@ class Mode:
             user_input = input("请输入：").strip()
         except KeyboardInterrupt:
             exit()
-
+        if user_input == "":
+            return False
         if user_input.startswith("http"):
             return self._from_url(user_input)
         if user_input.isdigit():
