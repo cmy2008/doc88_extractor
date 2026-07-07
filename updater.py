@@ -161,6 +161,8 @@ class Update:
 
     def gen_indexs(self):
         indexs = {}
+        if not os.path.isdir(self.docs_dir):
+            os.makedirs(self.docs_dir)
         for name in os.listdir(self.docs_dir):
             subdir = os.path.join(self.docs_dir, name)
             index_path = os.path.join(subdir, "index.json")
