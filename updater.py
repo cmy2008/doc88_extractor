@@ -1,53 +1,89 @@
-from utils import *
+# -*- coding: utf-8 -*-
+"""更新与工具链管理模块。
+
+负责检查 Java 环境、下载/更新 ffdec 和 svg2pdf、配置文件迁移等。
+"""
+
+import json
+import os
+import platform
 import re
 import shutil
-import os
-import json
-import platform
+import subprocess
+import zipfile
+
+from config import Config
+from utils import (
+    GitHubRelease,
+    choose,
+    download,
+    extract,
+    input_break,
+    logw,
+    ospath,
+)
+
 
 class Update:
-    def __init__(self, cfg2: Config) -> None:
-        self.cfg2 = cfg2
+    """应用程序更新及工具链管理器。"""
+
+    def __init__(self, config: Config) -> None:
+        self.cfg2 = config
         self.docs_dir = os.path.normpath(self.cfg2.o_dir_path)
 
-    def get_ffdec_asset(self):
-        """Return (rel, asset_name) where asset_name is the chosen ffdec zip asset or None."""
-        try:
-            rel = github_release(self.cfg2.ffdec_repo)
-        except Exception as e:
-            raise
+    # ------------------------------------------------------------------
+    # ffdec 相关
+    # ------------------------------------------------------------------
+
+    def get_ffdec_asset(self) -> tuple[GitHubRelease, str | None]:
+        """获取 ffdec 最新 release 和匹配的 zip 资源名。
+
+        Returns:
+            (GitHubRelease, asset_name) — asset_name 可能为 None。
+        """
+        rel = GitHubRelease(self.cfg2.ffdec_repo)
         version = rel.latest_version.lstrip("v").lstrip("V")
         releases = rel.releases
         desired_name = f"ffdec_{version}.zip"
-        asset_name = None
+
         if desired_name in releases:
-            asset_name = desired_name
-        else:
-            candidates = []
-            for name in releases:
-                m = re.match(r'^ffdec_(\d+\.\d+\.\d+)\.zip$', name)
-                if m:
-                    candidates.append((name, m.group(1)))
-            if candidates:
-                candidates.sort(key=lambda x: tuple(int(y) for y in x[1].split('.')), reverse=True)
-                asset_name = candidates[0][0]
-        return rel, asset_name
-    
-    def download_ffdec(self):
+            return rel, desired_name
+
+        # 按版本号降序查找最佳匹配
+        candidates = []
+        for name in releases:
+            m = re.match(r'^ffdec_(\d+\.\d+\.\d+)\.zip$', name)
+            if m:
+                candidates.append((name, m.group(1)))
+        if candidates:
+            candidates.sort(
+                key=lambda x: tuple(int(y) for y in x[1].split(".")),
+                reverse=True,
+            )
+            return rel, candidates[0][0]
+
+        return rel, None
+
+    def download_ffdec(self) -> bool:
+        """下载并解压 ffdec 工具。"""
         try:
             rel, asset_name = self.get_ffdec_asset()
         except Exception as e:
-            print(f"获取 ffdec 版本信息时出错: {str(e.__class__.__name__)}: {e}")
+            print(f"获取 ffdec 版本信息时出错: {e.__class__.__name__}: {e}")
             return False
+
         if not asset_name:
             print("未找到匹配的 ffdec zip 发行文件。")
             return False
+
         ffdec_url = self.cfg2.proxy_url + rel.releases[asset_name]
         print("开始下载 ffdec...")
         print(
-            "警告: 使用内置下载可能会非常慢，建议手动下载 ffdec 的压缩包，并将文件（确保包含 'ffdec.jar'）解压到 'ffdec' 目录中。"
+            "警告: 使用内置下载可能会非常慢，建议手动下载 ffdec 的压缩包，"
+            "并将文件（确保包含 'ffdec.jar'）解压到 'ffdec' 目录中。"
         )
         print("正在下载: " + ffdec_url)
+
         try:
             os.makedirs("ffdec")
         except FileExistsError:
@@ -57,14 +93,17 @@ class Update:
                 print("Continuing...")
             else:
                 return False
+
         try:
             download(ffdec_url, "ffdec/ffdec.zip")
-        except:
+        except Exception:
             print(
-                "下载出错! 请检查网络连接或修改配置中的 'proxy_url' 内容。如果仍然无法下载，请手动下载 ffdec 文件并提取到目录 ffdec 中。"
+                "下载出错! 请检查网络连接或修改配置中的 'proxy_url' 内容。"
+                "如果仍然无法下载，请手动下载 ffdec 文件并提取到目录 ffdec 中。"
             )
             input_break()
             return False
+
         print("下载完成! 开始解压...")
         try:
             extract("ffdec/ffdec.zip", "ffdec/")
@@ -78,68 +117,211 @@ class Update:
             input_break()
             return False
 
-    def check_java(self):
-        text="Java 不正常，请尝试重新安装 Java。"
-        text2="Java 未找到! 请安装 Java 并将其添加到 PATH 或 JAVA_HOME 中。"
-        try:
-            output = subprocess.run(['java', '-version'], capture_output=True, text=True)
-            if output.returncode != 0:
-                print(text)
-                return False
-            return True
-        except FileNotFoundError:
-            platform = os.name
-            if platform == "nt":
-                java_home = os.environ.get("JAVA_HOME", "")
-                if java_home:
-                    java_path = os.path.join(java_home, "bin", "java.exe")
-                    if os.path.isfile(java_path):
-                        os.environ["PATH"] = os.pathsep.join([os.path.join(java_home, "bin"), os.environ.get("PATH", "")])
-                        try:
-                            if subprocess.run(['java', '-version'],capture_output=True).returncode == 0:
-                                print("警告: Java 未配置到 PATH 中，但在 JAVA_HOME 中找到了，建议将其添加到 PATH 中。")
-                                return True
-                            else:
-                                print(text)
-                                return False
-                        except FileNotFoundError:
-                            print(text2)
-                            return False
-                    else:
-                        print(text2)
-                        return False
-                else:
-                    print(text2)
-                    return False
-
-    def ffdec_update(self):
+    def ffdec_update(self) -> bool:
+        """更新/重新下载 ffdec（保留或删除旧版本）。"""
         if os.path.isfile("ffdec/ffdec.jar"):
-            if choose("是否删除旧版本ffdec，否则创建备份？ (Y: 删除, N: 备份): "):
+            if choose(
+                "是否删除旧版本ffdec，否则创建备份？ (Y: 删除, N: 备份): "
+            ):
                 try:
-                        shutil.rmtree("ffdec")
+                    shutil.rmtree("ffdec")
                 except Exception as e:
                     print(f"Error occurred while removing old version: {e}")
             else:
                 try:
-                    name=self.cfg2.ffdec_version
-                    for i in range(1,100):
-                        if os.path.isdir(f"ffdec_{name}") or os.path.isdir(f"ffdec_{name}_{i}"):
-                            name=f"{name}_{i+1}"
+                    name = self.cfg2.ffdec_version
+                    for i in range(1, 100):
+                        if os.path.isdir(f"ffdec_{name}") or os.path.isdir(
+                            f"ffdec_{name}_{i}"
+                        ):
+                            name = f"{name}_{i + 1}"
                             break
                     shutil.move("ffdec", f"ffdec_{name}")
                 except Exception as e:
                     print(f"Error occurred while updating old version: {e}")
         return self.download_ffdec()
 
-    def upgrade(self):
+    # ------------------------------------------------------------------
+    # Java 环境
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def check_java() -> bool:
+        """检查 Java 是否可用。"""
+        text = "Java 不正常，请尝试重新安装 Java。"
+        text2 = "Java 未找到! 请安装 Java 并将其添加到 PATH 或 JAVA_HOME 中。"
+        try:
+            output = subprocess.run(
+                ["java", "-version"], capture_output=True, text=True
+            )
+            if output.returncode != 0:
+                print(text)
+                return False
+            return True
+        except FileNotFoundError:
+            if os.name == "nt":
+                java_home = os.environ.get("JAVA_HOME", "")
+                if java_home:
+                    java_path = os.path.join(java_home, "bin", "java.exe")
+                    if os.path.isfile(java_path):
+                        os.environ["PATH"] = os.pathsep.join([
+                            os.path.join(java_home, "bin"),
+                            os.environ.get("PATH", ""),
+                        ])
+                        try:
+                            result = subprocess.run(
+                                ["java", "-version"], capture_output=True
+                            )
+                            if result.returncode == 0:
+                                print(
+                                    "警告: Java 未配置到 PATH 中，但在 JAVA_HOME 中找到了，建议将其添加到 PATH 中。"
+                                )
+                                return True
+                            print(text)
+                            return False
+                        except FileNotFoundError:
+                            print(text2)
+                            return False
+                    print(text2)
+                    return False
+                print(text2)
+                return False
+            print(text2)
+            return False
+
+    # ------------------------------------------------------------------
+    # ffdec 配置
+    # ------------------------------------------------------------------
+
+    def ffdec_configure(self) -> bool:
+        """配置 ffdec 的临时目录和 font-face 导出选项。"""
+        # 配置临时目录
+        if self.cfg2.replace_jna_tmp_path:
+            jna_path = os.path.abspath(ospath("ffdec/jna_temp/"))
+            if not os.path.exists(ospath("ffdec/jna_temp/")):
+                try:
+                    os.makedirs(ospath("ffdec/jna_temp/"))
+                except FileNotFoundError:
+                    print(
+                        "Error when creating temporary folder for ffdec, "
+                        "maybe permission denied?"
+                    )
+            try:
+                subprocess.run(
+                    [
+                        "java", "-jar", "ffdec/ffdec.jar",
+                        "-config", f"jnaTempDirectory={jna_path}",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+            except Exception as err:
+                logw(str(err))
+                return False
+        else:
+            try:
+                subprocess.run(
+                    [
+                        "java", "-jar", "ffdec/ffdec.jar",
+                        "-config", 'jnaTempDirectory=""',
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+            except Exception as err:
+                logw(str(err))
+
+        # 配置 font-face
+        font_face_value = (
+            "true" if self.cfg2.svgfontface else "false"
+        )
+        try:
+            subprocess.run(
+                [
+                    "java", "-jar", "ffdec/ffdec.jar",
+                    "-config",
+                    f"textExportExportFontFace={font_face_value}",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except Exception as err:
+            logw(str(err))
+            return False
+
+        return True
+
+    # ------------------------------------------------------------------
+    # 主程序 / 资源更新
+    # ------------------------------------------------------------------
+
+    def check_update(self) -> bool:
+        """检查主程序是否有新版本。"""
+        try:
+            main_info = GitHubRelease("cmy2008/doc88_extractor")
+            if (
+                main_info.latest_version.lstrip("V")
+                > self.cfg2.default_config["version"]
+            ):
+                print(
+                    f"主程序检测到新版本 {main_info.latest_version}，"
+                    f"下载连接：\n{main_info.download_url}"
+                )
+            return True
+        except Exception as e:
+            print(f"检测主程序更新时出错: {e.__class__.__name__}: {e}")
+            return False
+
+    def check_ffdec_update(self) -> bool:
+        """检查 ffdec 版本并在需要时更新。"""
+        try:
+            rel, asset_name = self.get_ffdec_asset()
+            display_name = asset_name if asset_name else rel.latest_version
+            if (
+                rel.latest_version != self.cfg2.ffdec_version
+                and os.path.isfile("ffdec/ffdec.jar")
+                and self.cfg2.check_update
+            ):
+                if not choose(
+                    f"当前 ffdec 版本 {self.cfg2.ffdec_version}, "
+                    f"检测到新版本(文件名：{display_name})，是否更新？ (Y/n): "
+                ):
+                    return False
+            if (
+                rel.latest_version == self.cfg2.ffdec_version
+                and os.path.isfile("ffdec/ffdec.jar")
+            ):
+                return False
+            if not self.ffdec_update() and not os.path.isfile("ffdec/ffdec.jar"):
+                exit()
+            self.cfg2.ffdec_version = rel.latest_version
+            self.cfg2.save()
+            return True
+        except Exception as e:
+            print(f"检测 ffdec 更新时出错: {e.__class__.__name__}: {e}")
+            if not os.path.isfile("ffdec/ffdec.jar"):
+                print(
+                    "请手动下载 ffdec 的压缩包，并将文件（确保包含 'ffdec.jar'）"
+                    "解压到 'ffdec' 目录中：\n"
+                    "https://github.com/jindrapetrik/jpexs-decompiler/releases"
+                )
+                input_break()
+                exit()
+            return False
+
+    def upgrade(self) -> None:
+        """执行版本升级和资源迁移。"""
         if self.cfg2.version < "1.7":
             print("检测到旧版本资源文件，正在更新...")
-            self.resource_update()
-        self.gen_indexs()
+            self._resource_update()
+        self._gen_indexes()
         self.cfg2.version = self.cfg2.default_config["version"]
         self.cfg2.save()
-    
-    def resource_update(self):
+
+    def _resource_update(self) -> None:
+        """将旧版资源目录结构迁移到新版（以 p_code 命名）。"""
         if not os.path.isdir(self.docs_dir):
             return
         for name in os.listdir(self.docs_dir):
@@ -154,13 +336,17 @@ class Update:
                     if not os.path.exists(new_dir):
                         os.makedirs(new_dir)
                     for file in os.listdir(subdir):
-                        shutil.move(os.path.join(subdir, file), os.path.join(new_dir, file))
+                        shutil.move(
+                            os.path.join(subdir, file),
+                            os.path.join(new_dir, file),
+                        )
                     shutil.rmtree(subdir)
                 except Exception as e:
                     print(f"资源文件迁移失败: {subdir} -> {e}")
 
-    def gen_indexs(self):
-        indexs = {}
+    def _gen_indexes(self) -> None:
+        """生成文档索引文件 indexs.json。"""
+        indexes = {}
         if not os.path.isdir(self.docs_dir):
             os.makedirs(self.docs_dir)
         for name in os.listdir(self.docs_dir):
@@ -170,142 +356,73 @@ class Update:
                 try:
                     with open(index_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                    indexs[data["p_code"]] = data["p_name"]
+                    indexes[data["p_code"]] = data["p_name"]
                 except Exception as e:
                     print(f"资源文件索引生成失败: {subdir} -> {e}")
-        with open(os.path.join(self.docs_dir, "indexs.json"), "w", encoding="utf-8") as f:
-            json.dump(indexs, f, ensure_ascii=False, indent=2)
+        with open(
+            os.path.join(self.docs_dir, "indexs.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(indexes, f, ensure_ascii=False, indent=2)
 
-    def check_update(self):
+    # ------------------------------------------------------------------
+    # svg2pdf
+    # ------------------------------------------------------------------
+
+    def download_svg2pdf(self) -> bool:
+        """下载并解压 svg2pdf 工具。"""
         try:
-            main_info = github_release("cmy2008/doc88_extractor")
-            if main_info.latest_version.lstrip("V") > self.cfg2.default_config["version"]:
-                print(f"主程序检测到新版本 {main_info.latest_version}，下载连接：\n{main_info.download_url}")
-            return True
+            info = GitHubRelease(self.cfg2.svg2pdf_repo)
         except Exception as e:
-            print(f"检测主程序更新时出错: {str(e.__class__.__name__)}: {e}")
+            print(
+                f"获取 svg2pdf 版本信息时出错: {e.__class__.__name__}: {e}"
+            )
             return False
-    
-    def check_ffdec_update(self):
-        try:
-            rel, asset_name = self.get_ffdec_asset()
-            display_name = asset_name if asset_name else rel.latest_version
-            if rel.latest_version != self.cfg2.ffdec_version and os.path.isfile("ffdec/ffdec.jar") and self.cfg2.check_update:
-                if not choose(f"当前 ffdec 版本 {self.cfg2.ffdec_version}, 检测到新版本(文件名：{display_name})，是否更新？ (Y/n): "):
-                    return False
-            if rel.latest_version == self.cfg2.ffdec_version and os.path.isfile("ffdec/ffdec.jar"):
-                return False
-            if not self.ffdec_update() and not os.path.isfile("ffdec/ffdec.jar"):
-                exit()
-            self.cfg2.ffdec_version = rel.latest_version
-            self.cfg2.save()
-            return True
-        except Exception as e:
-            print(f"检测 ffdec 更新时出错: {str(e.__class__.__name__)}: {e}")
-            if not os.path.isfile("ffdec/ffdec.jar"):
-                print("请手动下载 ffdec 的压缩包，并将文件（确保包含 'ffdec.jar'）解压到 'ffdec' 目录中：https://github.com/jindrapetrik/jpexs-decompiler/releases")
-                input_break()
-                exit()
-            return False
-    
-    def ffdec_configure(self):
-        # 配置 ffdec 临时目录
-        if cfg2.replace_jna_tmp_path:
-            if not os.path.exists(ospath("ffdec/jna_temp/")):
-                try:
-                    os.makedirs(ospath("ffdec/jna_temp/"))
-                except FileNotFoundError:
-                    print("Error when creating temporary folder for ffdec, maybe permission denied?")
-            try:
-                subprocess.run(
-                    ["java", "-jar", "ffdec/ffdec.jar", "-config", f"jnaTempDirectory={os.path.abspath(ospath('ffdec/jna_temp/'))}"],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-            except Exception as err:
-                logw(str(err))
-                return False
-        # 待 ffdec 修复
-        '''
-        else:
-            try:
-                subprocess.run(
-                    ["java", "-jar", "ffdec/ffdec.jar", "-config", 'jnaTempDirectory=""'],
-                    capture_output=True,
-                    text=True
-                )
-            except Exception as err:
-                logw(str(err))
-        '''
-        # 配置 font-face
-        try:
-            if cfg2.svgfontface:
-                subprocess.run(
-                    ["java", "-jar", "ffdec/ffdec.jar", "-config", "textExportExportFontFace=true"],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
+
+        sys_platform = platform.system()
+        arch = platform.machine().lower()
+        file_name: str | None = None
+
+        if sys_platform == "Windows" and ("amd64" in arch or "x86_64" in arch):
+            file_name = "svg2pdf-x86_64-pc-windows-msvc.zip"
+        elif sys_platform == "Darwin" and ("arm64" in arch or "aarch64" in arch):
+            file_name = "svg2pdf-aarch64-apple-darwin.tar.gz"
+        elif sys_platform == "Darwin" and ("amd64" in arch or "x86_64" in arch):
+            file_name = "svg2pdf-x86_64-apple-darwin.tar.gz"
+        elif sys_platform == "Linux" and ("amd64" in arch or "x86_64" in arch):
+            file_name = "svg2pdf-x86_64-unknown-linux-gnu.tar.gz"
+        elif sys_platform == "Linux" and ("arm64" in arch or "aarch64" in arch):
+            uname = subprocess.run(
+                ["uname", "-o"], capture_output=True, text=True
+            )
+            if (
+                "Android" in uname.stdout
+                or "Toybox" in uname.stdout
+                or "BusyBox" in uname.stdout
+            ):
+                file_name = "svg2pdf-aarch64-android-libc.tar.gz"
             else:
-                subprocess.run(
-                    ["java", "-jar", "ffdec/ffdec.jar", "-config", "textExportExportFontFace=false"],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-        except Exception as err:
-            logw(str(err))
-            return False
-        return True
-    
-    def download_svg2pdf(self):
-        try:
-            info = github_release(self.cfg2.svg2pdf_repo)
-        except Exception as e:
-            print(f"获取 svg2pdf 版本信息时出错: {str(e.__class__.__name__)}: {e}")
-            return False
-        os_base_platform = platform.system()
-        os_arch = platform.machine().lower()
-        if os_base_platform == "Windows" and ("amd64" in os_arch or "x86_64" in os_arch):
-            file_name = 'svg2pdf-x86_64-pc-windows-msvc.zip'
-            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
-
-        elif os_base_platform == "Darwin" and ("arm64" in os_arch or "aarch64" in os_arch):
-            file_name = 'svg2pdf-aarch64-apple-darwin.tar.gz'
-            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
-
-        elif os_base_platform == "Darwin" and ("amd64" in os_arch or "x86_64" in os_arch):
-            file_name = 'svg2pdf-x86_64-apple-darwin.tar.gz'
-            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
-
-        elif os_base_platform == "Linux" and ("amd64" in os_arch or "x86_64" in os_arch):
-            file_name = 'svg2pdf-x86_64-unknown-linux-gnu.tar.gz'
-            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
-
-        # for Android support
-        elif os_base_platform == "Linux" and ("arm64" in os_arch or "aarch64" in os_arch):
-            uname = subprocess.run(['uname', '-o'], capture_output=True, text=True)
-            if "Android" in uname.stdout or "Toybox" in uname.stdout or "BusyBox" in uname.stdout:
-                file_name = 'svg2pdf-aarch64-android-libc.tar.gz'
-            else:
-                file_name = 'svg2pdf-aarch64-unknown-linux-gnu.tar.gz'
-            svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
-
+                file_name = "svg2pdf-aarch64-unknown-linux-gnu.tar.gz"
         else:
-            print("当前操作系统或架构不受支持，请自行编译安装 svg2pdf：https://github.com/typst/svg2pdf")
-            file_name = None
+            print(
+                "当前操作系统或架构不受支持，请自行编译安装 svg2pdf：\n"
+                "https://github.com/typst/svg2pdf"
+            )
             return False
+
+        svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
         print("开始下载 svg2pdf...")
         print("正在下载: " + svg2pdf_url)
+
         try:
             download(svg2pdf_url, file_name)
-        except:
-            print( 
-                "下载出错! 请检查网络连接或修改配置文件中 'proxy_url' 的内容。如果仍然无法下载，请手动下载 svg2pdf 。"
+        except Exception:
+            print(
+                "下载出错! 请检查网络连接或修改配置文件中 'proxy_url' 的内容。"
+                "如果仍然无法下载，请手动下载 svg2pdf 。"
             )
             input_break()
             return False
+
         print("下载完成! 开始解压...")
         try:
             extract(file_name, ".")
@@ -314,22 +431,29 @@ class Update:
             return True
         except zipfile.BadZipFile:
             print(
-                "解压失败! 链接可能已失效? 请尝试修改配置文件中 'svg2pdf_repo' 的内容。"
+                "解压失败! 链接可能已失效? 请尝试修改配置文件中 "
+                "'svg2pdf_repo' 的内容。"
             )
             input_break()
             return False
 
-    def check_svg2pdf(self):
-        if self.cfg2.swf2svg:
-            if not os.path.isfile("svg2pdf.exe") if os.name == "nt" else not os.path.isfile("svg2pdf"):
-                if platform.system() == "Windows" or platform.system() == "Linux" or platform.system() == "Darwin":
-                    if choose("检测到 svg2pdf 工具未下载，是否下载？ (Y/n): "):
-                        return self.download_svg2pdf()
-                    else:
-                        print("未下载 svg2pdf 工具，无法进行 SVG 转 PDF 操作。")
-                        return False
-                else:
-                    print("当前操作系统不支持 svg2pdf 工具，请自行编译安装：https://github.com/cmy2008/svg2pdf")
-                    return False
-            else:
-                return True
+    def check_svg2pdf(self) -> bool:
+        """检查 svg2pdf 工具是否就绪，必要时触发下载。"""
+        if not self.cfg2.swf2svg:
+            return True
+
+        svg2pdf_name = "svg2pdf.exe" if os.name == "nt" else "svg2pdf"
+        if not os.path.isfile(svg2pdf_name):
+            if platform.system() in ("Windows", "Linux", "Darwin"):
+                if choose(
+                    "检测到 svg2pdf 工具未下载，是否下载？ (Y/n): "
+                ):
+                    return self.download_svg2pdf()
+                print("未下载 svg2pdf 工具，无法进行 SVG 转 PDF 操作。")
+                return False
+            print(
+                "当前操作系统不支持 svg2pdf 工具，请自行编译安装：\n"
+                "https://github.com/cmy2008/svg2pdf"
+            )
+            return False
+        return True

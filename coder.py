@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Base64 编解码模块，使用自定义字符集进行混淆。"""
+
 import base64
 
 key1 = "PJLKMNOI3xyz021wvrpqstouHCFBDEGAnhikjlmgfZbacedYRXTSUVQW!56789+4"
@@ -6,6 +9,7 @@ std_str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 
 def encode(data: str, key: str = key1) -> str:
+    """使用自定义字符集进行 base64 编码。"""
     return (
         base64.b64encode(data.encode("utf-8"))
         .decode("utf-8")
@@ -14,4 +18,7 @@ def encode(data: str, key: str = key1) -> str:
 
 
 def decode(data: str, key: str = key1) -> str:
-    return base64.b64decode(data.translate(str.maketrans(key, std_str))).decode("utf-8")
+    """使用自定义字符集进行 base64 解码。"""
+    return base64.b64decode(
+        data.translate(str.maketrans(key, std_str))
+    ).decode("utf-8")
