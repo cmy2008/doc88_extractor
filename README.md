@@ -55,7 +55,7 @@ python3 main.py
 - 获取 `m_main` 数据的方法： / How to get the `m_main` data:
 1. 浏览器打开文档网页 / Open the document page in browser
 2. 打开 `开发者工具`，转到 `控制台` 选项卡 / 	Open `DevTools` and switch to the `Console` tab.
-3. 手动输入`允许粘贴`并回车，启用粘贴功能 / Type `allow pasting` manually then enter. This will allow you to past codes.
+3. 手动输入`允许粘贴`并回车，启用粘贴功能 / Type `allow pasting` manually then enter. This will allow you to paste code.
 4. 执行以下代码，即可一键复制 `m_main` 数据 / Run the code below to copy the `m_main` data in a single click.
     ```js
     (match = document.documentElement.outerHTML.match(/m_main\.init\("([^"]*)"\);/)) ? (copy(match[1]), console.log('Success.')) : console.log('Not found.')
