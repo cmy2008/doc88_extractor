@@ -24,7 +24,7 @@ class Config:
             "o_pdf_path": "pdf/",
             "o_svg_path": "svg/",
             "proxy_url": "https://gh.llkk.cc/",
-            "ffdec_repo": "jindrapetrik/jpexs-decompiler",
+            "ffdec_repo": "cmy2008/jpexs-decompiler",
             "svg2pdf_repo": "cmy2008/svg2pdf",
             "replace_jna_tmp_path": True,
             "check_update": True,
@@ -36,7 +36,7 @@ class Config:
             "path_replace": True,
             "download_workers": 10,
             "convert_workers": 5,
-            "pdf_scale": 2.0,
+            "pdf_scale": 1.0,
         }
         self.config_path = config_path
         # 运行时路径（非持久化）

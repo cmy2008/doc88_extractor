@@ -512,8 +512,8 @@ class Converter:
                 self.pdf,
                 str(ospath(f"{self.cfg2.pdf_path}{i}.pdf")),
             )
-            if not self.cfg2.swf2svg:
-                self.pdf.pages[-1].scale_by(1 / self.cfg2.pdf_scale)
+            # if not self.cfg2.swf2svg:
+                # self.pdf.pages[-1].scale_by(1 / self.cfg2.pdf_scale)
 
 
 def _safe_rmtree(path: str) -> None:
