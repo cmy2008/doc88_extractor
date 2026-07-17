@@ -21,7 +21,7 @@ A tool to extract and convert doc88 documents (non-screenshot).
 安装依赖：
 
 ```bash
-pip3 install retrying pypdf requests curl_cffi
+pip3 install retrying requests curl_cffi
 ```
 
 ### Java
@@ -60,8 +60,8 @@ python3 main.py
     ```js
     (match = document.documentElement.outerHTML.match(/m_main\.init\("([^"]*)"\);/)) ? (copy(match[1]), console.log('Success.')) : console.log('Not found.')
     ```
-- 首次运行会生成配置文件，检测更新并下载 ffdec。  
-    On first run, there will be a configuration file `config.json`, then check the updates and download the ffdec.
+- 首次运行会生成配置文件，检测更新并下载 ffdec 和 presse（用于 PDF 合并）。  
+    On first run, there will be a configuration file `config.json`, then check the updates and download the ffdec and presse(uses for pdf merging).
 
 
 ## 配置 / Configuration
@@ -89,4 +89,3 @@ python3 main.py
 - 使用 `swf2svg` 选项，而不使用 `svgfontface` 选项，由于省去了文本转换过程，可以大大加快转换速度
 - 若启用 `svgfontface` 选项，由于 [typst/svg2pdf](https://github.com/typst/svg2pdf) 的缺陷，将无法转换字体，会自动替换为默认字体
 - 若启用 `svgfontface` 选项，由于 [ffdec](https://github.com/jindrapetrik/jpexs-decompiler) 的缺陷，某些形状或文本会出现转换错误
-- 为防止转换出的部分字体过粗，`pdf_scale` 被默认设置为 `2.0`，这会稍微减缓转换速度，如需加快转换速度，可将此项设置为 `1.0` 或更小的值（对于粗体或本身较粗的字体影响大，对细体几乎无影响），若仍然出现部分字体变粗，可尝试修改为更大的值（`2.0`-`5.0`）

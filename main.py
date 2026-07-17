@@ -14,7 +14,6 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from pypdf import PdfWriter, errors
 from coder import decode, encode
 from compressor import make_swf
 from config import Config, cfg2
@@ -26,7 +25,6 @@ from utils import (
     choose,
     download,
     get_request,
-    input_break,
     logw,
     ospath,
     read_file,
@@ -86,28 +84,6 @@ def get_main_from_url(url: str) -> dict | bool:
     c = data.span()
     encode_data = content[c[0] + 13 : c[1] - 3]
     return decode_data(encode_data)
-
-
-# ---------------------------------------------------------------------------
-# PDF 拼接
-# ---------------------------------------------------------------------------
-
-def append_pdf(pdf: PdfWriter, file: str) -> PdfWriter:
-    """向 PdfWriter 追加一个 PDF 文件页。
-
-    自动跳过损坏/空文件并记录日志。
-    """
-    if isinstance(file, str) and os.path.exists(file) and os.path.getsize(file) > 0:
-        try:
-            pdf.append(ospath(file))
-            return pdf
-        except errors.EmptyFileError:
-            print(f"跳过损坏的文件: {file}")
-            logw(f"跳过损坏的文件: {file}")
-    else:
-        print(f"跳过不存在或为空的文件: {file}")
-        logw(f"跳过不存在或为空的文件: {file}")
-    return pdf
 
 
 # ---------------------------------------------------------------------------
@@ -359,8 +335,6 @@ class Converter:
 
     def __init__(self, config: Config) -> None:
         self.cfg2 = config
-        self.pdf = PdfWriter()
-        self.pdflist: list[str] = []
 
     # -- SWF 帧画布修正 --
 
@@ -475,7 +449,6 @@ class Converter:
                         ospath(f"{dirpath}{f}/frames.pdf"),
                         ospath(f"{self.cfg2.pdf_path}{f[:-4]}.pdf"),
                     )
-                    self.pdflist.append(f[:-4])
             _safe_rmtree(ospath(dirpath))
             _safe_rmtree(ospath(swf_dir))
         except FileNotFoundError:
@@ -497,23 +470,28 @@ class Converter:
                 text=True,
                 capture_output=True,
             )
-            self.pdflist.append(str(i))
         except FileNotFoundError as e:
             print("Can't convert this page! Skipping...")
             logw(f"SVG to PDF converting error: {e}")
 
     # -- 合并 PDF --
 
-    def makepdf(self) -> None:
+    def makepdf(self, path: str) -> None:
         """合并所有单页 PDF 为最终文档。"""
-        self.pdflist = sorted(self.pdflist, key=lambda x: int(x))
-        for i in self.pdflist:
-            self.pdf = append_pdf(
-                self.pdf,
-                str(ospath(f"{self.cfg2.pdf_path}{i}.pdf")),
-            )
-            # if not self.cfg2.swf2svg:
-                # self.pdf.pages[-1].scale_by(1 / self.cfg2.pdf_scale)
+        run = subprocess.run(
+            [
+                "presse",
+                "merge",
+                f"{self.cfg2.pdf_path}*.pdf",
+                "-c",
+                "-o",
+                path
+            ],
+            capture_output=True,
+            text=True
+        )
+        if run.returncode != 0:
+            logw("PDF merging error: " + (run.stderr or run.stdout))
 
 
 def _safe_rmtree(path: str) -> None:
@@ -578,12 +556,8 @@ def convert(cfg: GenConfig) -> None:
         gc.collect()
 
     print("Now start making pdf, please wait...")
-    doc.makepdf()
     pdf_name = cfg2.o_dir_path + special_path(cfg.p_name) + ".pdf"
-    doc.pdf.write(str(ospath(pdf_name)))
-    # 释放 PdfWriter 持有的所有页面数据
-    del doc.pdf
-    doc.pdflist.clear()
+    doc.makepdf(str(ospath(pdf_name)))
     gc.collect()
     print("转换完成！")
     print("已将文件保存至 " + pdf_name)
@@ -709,44 +683,10 @@ if __name__ == "__main__":
         "用户需自行承担全部责任\n"
     )
 
-    # 初始化更新管理器
+    # 初始化更新管理器并检查必需/可选工具依赖
     update = Update(cfg2)
-    if not update.check_java():
-        input_break()
+    if not update.check_tools():
         exit()
-    if cfg2.check_update or not os.path.isfile("ffdec/ffdec.jar"):
-        update.check_ffdec_update()
-    if cfg2.check_update:
-        update.check_update()
-    update.upgrade()
-
-    if not update.ffdec_configure():
-        print("ffdec 配置失败！")
-        print(
-            "请尝试：\n"
-            "1. 检查 Java 是否正常并使用了推荐版本\n"
-            "2. 检查 ffdec 是否安装正确且能正常运行"
-        )
-        if os.name == "nt":
-            print(
-                "3. 删除 ffdec 的配置文件"
-                "（通常在 %APPDATA%\\JPEXS\\FFDec\\config.toml）后重试"
-            )
-        else:
-            print("3. 删除 ffdec 的配置文件后重试")
-        input_break()
-        exit()
-
-    # SVG 转 PDF 工具链
-    if cfg2.swf2svg:
-        print(
-            "使用 SVG 转换功能建议同时关闭 font-face 功能，"
-            "否则将会导致字体丢失，若只需要 SVG 文件可关闭清理功能，"
-            "文件将会生成到对应文档 ID 目录下的 svg 目录"
-        )
-        if not update.check_svg2pdf():
-            print("svg2pdf 工具安装失败，将继续以 SWF 到 PDF 方式转换。")
-            cfg2.swf2svg = False
 
     # 调试模式
     _DEBUG = "--debug" in sys.argv

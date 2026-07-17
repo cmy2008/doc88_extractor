@@ -19,5 +19,6 @@ docin.py
 *.svg
 *.pdf
 svg2pdf*
+presse*
 *.xdf
 *.hexproj

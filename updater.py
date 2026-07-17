@@ -365,60 +365,61 @@ class Update:
             json.dump(indexes, f, ensure_ascii=False, indent=2)
 
     # ------------------------------------------------------------------
-    # svg2pdf
+    # 工具依赖管理（必需 / 可选）
     # ------------------------------------------------------------------
 
-    def download_svg2pdf(self) -> bool:
-        """下载并解压 svg2pdf 工具。"""
-        try:
-            info = GitHubRelease(self.cfg2.svg2pdf_repo)
-        except Exception as e:
-            print(
-                f"获取 svg2pdf 版本信息时出错: {e.__class__.__name__}: {e}"
-            )
-            return False
-
+    @staticmethod
+    def _tool_asset_name(tool_name: str) -> str | None:
+        """返回当前平台对应的工具发行包文件名。"""
         sys_platform = platform.system()
         arch = platform.machine().lower()
-        file_name: str | None = None
+        if sys_platform == "Windows":
+            if "arm64" in arch or "aarch64" in arch:
+                return f"{tool_name}-aarch64-pc-windows-msvc.zip"
+            return f"{tool_name}-x86_64-pc-windows-msvc.zip"
+        elif sys_platform == "Darwin":
+            if "arm64" in arch or "aarch64" in arch:
+                return f"{tool_name}-aarch64-apple-darwin.tar.gz"
+            return f"{tool_name}-x86_64-apple-darwin.tar.gz"
+        elif sys_platform == "Linux":
+            if "arm64" in arch or "aarch64" in arch:
+                return f"{tool_name}-aarch64-unknown-linux-musl.tar.gz"
+            return f"{tool_name}-x86_64-unknown-linux-gnu.tar.gz"
+        return None
 
-        if sys_platform == "Windows" and ("amd64" in arch or "x86_64" in arch):
-            file_name = "svg2pdf-x86_64-pc-windows-msvc.zip"
-        elif sys_platform == "Darwin" and ("arm64" in arch or "aarch64" in arch):
-            file_name = "svg2pdf-aarch64-apple-darwin.tar.gz"
-        elif sys_platform == "Darwin" and ("amd64" in arch or "x86_64" in arch):
-            file_name = "svg2pdf-x86_64-apple-darwin.tar.gz"
-        elif sys_platform == "Linux" and ("amd64" in arch or "x86_64" in arch):
-            file_name = "svg2pdf-x86_64-unknown-linux-gnu.tar.gz"
-        elif sys_platform == "Linux" and ("arm64" in arch or "aarch64" in arch):
-            uname = subprocess.run(
-                ["uname", "-o"], capture_output=True, text=True
-            )
-            if (
-                "Android" in uname.stdout
-                or "Toybox" in uname.stdout
-                or "BusyBox" in uname.stdout
-            ):
-                file_name = "svg2pdf-aarch64-android-libc.tar.gz"
-            else:
-                file_name = "svg2pdf-aarch64-unknown-linux-gnu.tar.gz"
-        else:
+    @staticmethod
+    def _tool_binary_name(tool_name: str) -> str:
+        """返回当前平台对应的工具可执行文件名。"""
+        if os.name == "nt":
+            return f"{tool_name}.exe"
+        return tool_name
+
+    def _download_tool(self, tool_name: str) -> bool:
+        """下载并解压指定工具（不包含存在性检查）。"""
+        try:
+            info = GitHubRelease(getattr(self.cfg2, f"{tool_name}_repo"))
+        except Exception as e:
+            print(f"获取 {tool_name} 版本信息时出错: {e.__class__.__name__}: {e}")
+            return False
+
+        file_name = self._tool_asset_name(tool_name)
+        if not file_name:
             print(
-                "当前操作系统或架构不受支持，请自行编译安装 svg2pdf：\n"
-                "https://github.com/typst/svg2pdf"
+                f"当前操作系统或架构不受支持，请自行编译安装 {tool_name}：\n"
+                f"https://github.com/cmy2008/{tool_name}"
             )
             return False
 
-        svg2pdf_url = self.cfg2.proxy_url + info.releases[file_name]
-        print("开始下载 svg2pdf...")
-        print("正在下载: " + svg2pdf_url)
+        tool_url = self.cfg2.proxy_url + info.releases[file_name]
+        print(f"开始下载 {tool_name}...")
+        print(f"正在下载: {tool_url}")
 
         try:
-            download(svg2pdf_url, file_name)
+            download(tool_url, file_name)
         except Exception:
             print(
-                "下载出错! 请检查网络连接或修改配置文件中 'proxy_url' 的内容。"
-                "如果仍然无法下载，请手动下载 svg2pdf 。"
+                f"下载出错! 请检查网络连接或修改配置文件中 'proxy_url' 的内容。"
+                f"如果仍然无法下载，请手动下载 {tool_name} 。"
             )
             input_break()
             return False
@@ -432,28 +433,114 @@ class Update:
         except zipfile.BadZipFile:
             print(
                 "解压失败! 链接可能已失效? 请尝试修改配置文件中 "
-                "'svg2pdf_repo' 的内容。"
+                f"'{tool_name}_repo' 的内容。"
             )
             input_break()
             return False
+
+    def download_tool(self, tool_name: str) -> bool:
+        """下载并解压指定工具（保留对外兼容接口）。"""
+        return self._download_tool(tool_name)
+
+    def check_required_tool(self, tool_name: str) -> bool:
+        """检查必需工具，缺失则自动下载，下载失败返回 False。"""
+        binary = self._tool_binary_name(tool_name)
+        if os.path.isfile(binary):
+            return True
+        print(f"检测到必要工具 {tool_name} 未安装，正在自动下载...")
+        if not self._download_tool(tool_name):
+            print(f"自动下载 {tool_name} 失败，请检查网络连接后重试")
+            return False
+        return True
+
+    # ------------------------------------------------------------------
+    # 统一的启动工具链检查入口
+    # ------------------------------------------------------------------
+
+    def check_tools(self) -> bool:
+        """统一检查并下载所有必需 / 可选工具。
+
+        必需：Java 环境 + ffdec、presse
+        可选：svg2pdf（仅在 swf2svg 模式下检查）
+        """
+        # ---- 必需：Java + ffdec ----
+        if not self.check_java():
+            input_break()
+            return False
+
+        should_check_ffdec = (
+            self.cfg2.check_update or not os.path.isfile("ffdec/ffdec.jar")
+        )
+        if should_check_ffdec:
+            self.check_ffdec_update()
+        if self.cfg2.check_update:
+            self.check_update()
+        self.upgrade()
+
+        if not self.ffdec_configure():
+            print("ffdec 配置失败！")
+            print(
+                "请尝试：\n"
+                "1. 检查 Java 是否正常并使用了推荐版本\n"
+                "2. 检查 ffdec 是否安装正确且能正常运行"
+            )
+            if os.name == "nt":
+                print(
+                    "3. 删除 ffdec 的配置文件"
+                    "（通常在 %APPDATA%\\JPEXS\\FFDec\\config.toml）后重试"
+                )
+            else:
+                print("3. 删除 ffdec 的配置文件后重试")
+            input_break()
+            return False
+
+        # ---- 必需：presse ----
+        if not self.check_required_tool("presse"):
+            input_break()
+            return False
+
+        # ---- 可选：svg2pdf ----
+        if self.cfg2.swf2svg:
+            print(
+                "使用 SVG 转换功能建议同时关闭 font-face 功能，"
+                "否则将会导致字体丢失，若只需要 SVG 文件可关闭清理功能，"
+                "文件将会生成到对应文档 ID 目录下的 svg 目录"
+            )
+            svg2pdf_bin = self._tool_binary_name("svg2pdf")
+            if not os.path.isfile(svg2pdf_bin):
+                if platform.system() in ("Windows", "Linux", "Darwin"):
+                    if choose(
+                        "检测到 svg2pdf 工具未下载，是否下载？ (Y/n): "
+                    ):
+                        if not self._download_tool("svg2pdf"):
+                            print(
+                                "svg2pdf 工具安装失败，"
+                                "将继续以 SWF 到 PDF 方式转换。"
+                            )
+                            self.cfg2.swf2svg = False
+                    else:
+                        print(
+                            "未下载 svg2pdf 工具，无法进行 SVG 转 PDF 操作。"
+                        )
+                        self.cfg2.swf2svg = False
+                else:
+                    self.cfg2.swf2svg = False
+
+        return True
 
     def check_svg2pdf(self) -> bool:
         """检查 svg2pdf 工具是否就绪，必要时触发下载。"""
         if not self.cfg2.swf2svg:
             return True
 
-        svg2pdf_name = "svg2pdf.exe" if os.name == "nt" else "svg2pdf"
+        svg2pdf_name = self._tool_binary_name("svg2pdf")
         if not os.path.isfile(svg2pdf_name):
             if platform.system() in ("Windows", "Linux", "Darwin"):
                 if choose(
                     "检测到 svg2pdf 工具未下载，是否下载？ (Y/n): "
                 ):
-                    return self.download_svg2pdf()
+                    return self._download_tool("svg2pdf")
                 print("未下载 svg2pdf 工具，无法进行 SVG 转 PDF 操作。")
                 return False
-            print(
-                "当前操作系统不支持 svg2pdf 工具，请自行编译安装：\n"
-                "https://github.com/cmy2008/svg2pdf"
-            )
             return False
         return True
