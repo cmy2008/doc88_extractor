@@ -483,7 +483,6 @@ class Converter:
                 "presse",
                 "merge",
                 f"{self.cfg2.pdf_path}*.pdf",
-                "-c",
                 "-o",
                 path
             ],
