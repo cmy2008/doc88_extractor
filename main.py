@@ -164,8 +164,8 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
     """
 
     cfg = GenConfig(config)
-    if os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
-        cfg = GenConfig(json.loads(read_file(f"{cfg2.dir_path}index.json")))
+    if os.path.exists(ospath(f"{cfg2.o_dir_path}{config['p_code']}/index.json")):
+        cfg = GenConfig(json.loads(read_file(f"{cfg2.o_dir_path}{config['p_code']}/index.json")))
 
     print(f"文档名：{cfg.p_name}")
     print(f"文档 ID：{cfg.p_code}")

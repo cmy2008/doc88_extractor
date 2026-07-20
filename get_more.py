@@ -23,7 +23,7 @@ class GetMore:
         self.cfg = cfg
         self.comp = Compressor()
         self.level = level
-        self.chunk_size = 10240000
+        self.chunk_size = 1024000
         self.header = bytearray()
         self.filepath = filepath
         self.newpageids: list[str] = []
@@ -49,102 +49,133 @@ class GetMore:
         write_file(self.PH_data, f"{self.filepath}{self.cfg.ph(self.level).name}")
         if self._scan(self.level):
             return self._get_newpageids()
-        # _scan 失败，清理缓冲区
         self.PK_data.clear()
         self.PH_data = b""
         return None
 
     def _scan(self, scan_range: int = 0) -> bool:
-        """对指定层级进行字节级扫描，寻找隐藏页面。"""
-        print(f"level {self.level} start scannig...")
+        """先将当前层数据全部下载到内存，再扫描页面边界。"""
+        print(f"level {self.level} start scanning...")
         headsize = int(self.cfg.headnums[self.level - 1])
         self.flags = [headsize]
-        url = (
-            self.cfg.ebt_host
-            + "/getebt-"
-            + encode(
-                f"{self.level}-{headsize}-{self.chunk_size}-{self.cfg.p_swf}-1-{self.cfg.p_code}",
-                key2,
-            )
-            + ".ebt"
-        )
-        response = get_request(url, cffi=False, content_type="", stream=True)
-        if response.status_code != 200:
-            return False
-        expected_ending = False
-        with open(ospath(f"{self.filepath}cache.ebt"), "wb") as file:
-            size = 0
-            offset = 0
-            status = False
-            try:
-                for chunk in response.iter_content(chunk_size=1):
-                    if not chunk:
-                        continue
-                    self.PK_data.extend(chunk)
-                    if 32 <= size <= 33:
-                        self.header.extend(chunk)
-                    elif size > 33:
-                        if chunk == struct.pack("B", self.header[0]):
-                            status = True
-                        elif chunk == struct.pack("B", self.header[1]):
-                            if status:
-                                if size - 33 - offset < scan_range:
-                                    print(f"pass:{size}-{size - 33 - offset}")
-                                    status = False
-                                else:
-                                    br = f"{headsize + offset}-{size - 33 - offset}"
-                                    if self._test():
-                                        write_file(
-                                            self.PK_data,
-                                            f"{self.filepath}getebt-"
-                                            f"{encode(f'{self.level}-{headsize + offset}-{size - offset - 33}-{self.cfg.p_swf}-{self.pagecount + len(self.ids) + 1}-{self.cfg.p_code}', key2)}.ebt",
-                                        )
-                                        self.save_progress(
-                                            "pk",
-                                            self.pagecount + len(self.ids) + 1,
-                                        )
-                                        self.PK_data = self.PK_data[
-                                            size - 33 - offset:
-                                        ]
-                                        print(f"found:{br}")
-                                        self.ids.append(br)
-                                        offset = size - 33
-                                    else:
-                                        print(f"zpass:{br}")
-                                        status = False
-                            else:
-                                status = False
-                        else:
-                            status = False
-                    size += file.write(chunk)
-            except requests.exceptions.ChunkedEncodingError:
-                expected_ending = True
 
-            if self._test():
-                write_file(
-                    self.PK_data,
-                    f"{self.filepath}getebt-"
-                    f"{encode(f'{self.level}-{headsize + offset}-{size - offset}-{self.cfg.p_swf}-{self.pagecount + len(self.ids) + 1}-{self.cfg.p_code}', key2)}.ebt",
+        # 分块下载：每次请求 chunk_size 字节，服务器在数据超限时断开并抛出 ChunkedEncodingError
+        self.PK_data = bytearray()
+        offset = headsize
+        page_num = 0
+        while True:
+            page_num += 1
+            url = (
+                self.cfg.ebt_host
+                + "/getebt-"
+                + encode(
+                    f"{self.level}-{offset}-{self.chunk_size}-{self.cfg.p_swf}-{page_num}-{self.cfg.p_code}",
+                    key2,
                 )
-                self.save_progress("pk", self.pagecount + len(self.ids) + 1)
-                self.ids.append(f"{headsize + offset}-{size - offset}")
-                print(f"finish:{headsize + offset}-{size - offset}")
-            else:
-                if not expected_ending:
-                    print("Unexpected ending, is the file too big?")
-                else:
-                    print("Error in the last page, maybe the header is changed?")
-            print(f"total page:{len(self.ids)}")
-            # 释放扫描过程中积累的大缓冲区
-            self.PK_data.clear()
-            self.PH_data = b""
-            gc.collect()
-            return True
+                + ".ebt"
+            )
+            try:
+                response = get_request(url, cffi=False, content_type="", stream=True)
+            except Exception:
+                break
+            if response.status_code != 200:
+                break
+            buf = bytearray()
+            chunked_error = False
+            try:
+                for chunk in response.iter_content(chunk_size=65536):
+                    if chunk:
+                        buf.extend(chunk)
+            except requests.exceptions.ChunkedEncodingError:
+                chunked_error = True
+                # 尾部逐字节补全（可能无数据）
+                try:
+                    while True:
+                        b = response.raw.read(1)
+                        if not b:
+                            break
+                        buf.extend(b)
+                except Exception:
+                    pass
+            if not buf:
+                break
+            self.PK_data.extend(buf)
+            # 未触发截断且数据量不足 chunk_size → 文件末尾
+            if not chunked_error and len(buf) < self.chunk_size:
+                break
+            offset += self.chunk_size
 
-    def _test(self) -> bool:
-        """验证当前 PK 数据是否可成功解压为 SWF。"""
-        # 直接传入 bytearray，避免 bytes() 产生额外内存拷贝
-        pk = self.comp._decompress_ebt_pk(self.PK_data)
+        if len(self.PK_data) == 0:
+            return False
+
+        # 在内存中扫描页面边界
+        self.header = bytearray()
+        pos = 0
+        page_start = 0
+        status = False
+        while pos < len(self.PK_data):
+            b = self.PK_data[pos]
+            if 32 <= pos <= 33:
+                self.header.append(b)
+            elif pos > 33:
+                if b == self.header[0]:
+                    status = True
+                elif b == self.header[1]:
+                    if status:
+                        page_size = pos - 33 - page_start
+                        if page_size < scan_range:
+                            print(f"pass:{pos}-{page_size}")
+                            status = False
+                        else:
+                            br = f"{headsize + page_start}-{page_size}"
+                            page_data = self.PK_data[page_start:pos + 1]
+                            if self._test_bytearray(page_data):
+                                write_file(
+                                    page_data,
+                                    f"{self.filepath}getebt-"
+                                    f"{encode(f'{self.level}-{headsize + page_start}-{page_size}-{self.cfg.p_swf}-{self.pagecount + len(self.ids) + 1}-{self.cfg.p_code}', key2)}.ebt",
+                                )
+                                self.save_progress(
+                                    "pk",
+                                    self.pagecount + len(self.ids) + 1,
+                                )
+                                print(f"found:{br}")
+                                self.ids.append(br)
+                                page_start = pos - 33
+                            else:
+                                print(f"zpass:{br}")
+                                status = False
+                    else:
+                        status = False
+                else:
+                    status = False
+            pos += 1
+
+        # 处理剩余数据
+        remaining_data = self.PK_data[page_start:]
+        if remaining_data and self._test_bytearray(remaining_data):
+            br = f"{headsize + page_start}-{len(remaining_data)}"
+            write_file(
+                remaining_data,
+                f"{self.filepath}getebt-"
+                f"{encode(f'{self.level}-{headsize + page_start}-{len(remaining_data)}-{self.cfg.p_swf}-{self.pagecount + len(self.ids) + 1}-{self.cfg.p_code}', key2)}.ebt",
+            )
+            self.save_progress("pk", self.pagecount + len(self.ids) + 1)
+            self.ids.append(br)
+            print(f"finish:{br}")
+        else:
+            print("Error in the last page, maybe the header is changed?")
+
+        print(f"total page:{len(self.ids)}")
+        self.PK_data.clear()
+        self.PH_data = b""
+        gc.collect()
+        return True
+
+
+    def _test_bytearray(self, data: bytearray) -> bool:
+        """验证指定的 PK 数据是否可成功解压为 SWF。"""
+        pk = self.comp._decompress_ebt_pk(data)
         ph = self.comp._decompress_ebt_ph(self.PH_data)
         if pk:
             write_file(
