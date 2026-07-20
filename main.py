@@ -5,23 +5,32 @@
   输入 URL/ID/m_main 数据 → 下载 SWF 资源 → 转换为 PDF（可选 SVG 中转）。
 """
 
-import gc
-import json
-import os
-import re
-import shutil
-import subprocess
 import sys
-import time
-from concurrent.futures import ThreadPoolExecutor
-from coder import decode, encode
-from compressor import make_swf
-from config import Config, cfg2
-from ebt_import import build_cfg, import_ebt
-from gen_cfg import GenConfig
-from get_more import GetMore
-from updater import Update
-from utils import (
+import os
+
+# 设置程序目录
+if getattr(sys, 'frozen', False):
+    app_dir = os.path.dirname(sys.executable)
+else:
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(app_dir)
+
+import gc  # noqa: E402
+import json  # noqa: E402
+import re  # noqa: E402
+import shutil  # noqa: E402
+import subprocess  # noqa: E402
+import time  # noqa: E402
+from concurrent.futures import ThreadPoolExecutor  # noqa: E402
+from coder import decode, encode, key2  # noqa: E402
+from compressor import make_swf  # noqa: E402
+from config import Config, cfg2  # noqa: E402
+from ebt_import import build_cfg, import_ebt, import_xml  # noqa: E402
+from gen_cfg import GenConfig  # noqa: E402
+from get_more import GetMore  # noqa: E402
+from updater import Update  # noqa: E402
+from xml.parsers.expat import ExpatError
+from utils import (  # noqa: E402
     choose,
     download,
     get_request,
@@ -34,10 +43,12 @@ from utils import (
 )
 
 # ---------------------------------------------------------------------------
-# 模块级调试开关
+# 全局变量
 # ---------------------------------------------------------------------------
-_DEBUG: bool = False
-
+_DEBUG = False
+_DOC88_DOMAIN = "doc88.com"
+_CDN_DOMAIN = "doc88.piglin.eu.org"
+_API_DOCINFO = "doc.php?act=info&p_code="
 
 # ---------------------------------------------------------------------------
 # 数据解码
@@ -57,34 +68,53 @@ def decode_data(encode_data: str) -> dict:
 # URL 解析
 # ---------------------------------------------------------------------------
 
-def get_main_from_url(url: str) -> dict | bool:
+def get_main_from_url(url: str, way: int = 1) -> dict | bool:
     """从 doc88 页面 URL 提取文档配置数据。
 
     Returns:
         配置字典，或 False（WAF 检测且用户拒绝使用 CDN）。
     """
-    if url.find("doc88.com/p-") == -1 and url.find("doc88.piglin.eu.org/p-") == -1:
+    if url.find(f"{_DOC88_DOMAIN}/p-") == -1 and url.find(f"_CDN_DOMAIN/p-") == -1:
         raise Exception("Invalid URL!")
+    # 方法 1
+    if way == 1:
+        try:
+            p_code = url.split("/p-")[1].split(".html")[0]
+            if p_code.isdigit():
+                return get_main_from_xml(p_code)
+            else:
+                return get_main_from_url(url,2)
+        except (KeyError, TypeError, ExpatError):
+            print("方法 1 获取失败，切换至方法 2...",e)
+            return get_main_from_url(url,2)
+    # 方法 2
+    elif way == 2:
+        reponse = get_request(url, referer=True, cffi=True)
+        if reponse.status_code == 404:
+            raise Exception("404 Not found!")
+        content = reponse.text
+        data = re.search(r'm_main\.init\(".*"\);', content)
+        if data is None:
+            if re.search("网络环境安全验证", content):
+                print("WAF detected!")
+                # 使用第二种
 
-    request = get_request(url, referer=True, cffi=True)
-    if request.status_code == 404:
-        raise Exception("404 Not found!")
+                if choose("Do you want to use CDN?(Y/n): "):
+                    url = f"https://{_CDN_DOMAIN}{url.split(_DOC88_DOMAIN)[1]}"
+                    return get_main_from_url(url)
+                return False
+            raise Exception("Can't find data in this page! Please try another.")
+        c = data.span()
+        encode_data = content[c[0] + 13 : c[1] - 3]
+        return decode_data(encode_data)
 
-    content = request.text
-    data = re.search(r'm_main\.init\(".*"\);', content)
-    if data is None:
-        if re.search("网络环境安全验证", content):
-            print("WAF detected!")
-            if choose("Do you want to use CDN?(Y/n): "):
-                url = url.replace("www.doc88.com", "doc88.piglin.eu.org")
-                return get_main_from_url(url)
-            return False
-        raise Exception("Can't find data in this page! Please try another.")
-
-    c = data.span()
-    encode_data = content[c[0] + 13 : c[1] - 3]
-    return decode_data(encode_data)
-
+def get_main_from_xml(p_code: str):
+    url = f"https://www.{_DOC88_DOMAIN}/{_API_DOCINFO}{p_code}"
+    reponse = get_request(url, referer=True, cffi=True)
+    if not reponse.text:
+        raise KeyError
+    xml = decode(reponse.text, key2)
+    return build_cfg(*import_xml(xml))
 
 # ---------------------------------------------------------------------------
 # 初始化
@@ -132,8 +162,6 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
     Returns:
         提取是否成功。
     """
-    if initial:
-        init(config)
 
     cfg = GenConfig(config)
     if os.path.exists(ospath(f"{cfg2.dir_path}index.json")):
@@ -143,17 +171,10 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
     print(f"文档 ID：{cfg.p_code}")
     print(f"上传日期：{cfg.p_date}")
     print(f"页数：{cfg.p_pagecount}")
-
-    if int(cfg.p_pagecount) != cfg.p_count:
-        more = True
-        print(f"可预览页数：{cfg.p_count_info}")
-        print(f"可直接获取页数：{cfg.p_count}")
-        print("可能有额外页面（需扫描）！")
-
-    if not choose("开始提取？ (Y/n): "):
-        return False
-
-    # 免费文档直接下载
+    # 免费直接下载逻辑非必要，仅提示
+    if cfg.p_download == "1":
+        print("提示：该文档为免费文档，可直接通过网页下载！")
+    '''
     if cfg.p_download == "1":
         print("该文档为免费文档，可直接下载！")
         if choose("down"):
@@ -179,7 +200,17 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
                 logw("Download error: " + str(err))
         else:
             print("Continuing...")
+    '''
+    if int(cfg.p_pagecount) != cfg.p_count:
+        more = True
+        print(f"可预览页数：{cfg.p_count_info}")
+        print(f"可直接获取页数：{cfg.p_count}")
+        print("可能有额外页面（需扫描）！")
 
+    if not choose("开始提取？ (Y/n): "):
+        return False
+    if initial:
+        init(config)
     # 额外页面扫描
     if more:
         if choose("即将通过扫描获取页面，是否继续（否则正常下载）？ (Y/n): "):
@@ -651,7 +682,7 @@ class Mode:
         """从本地 EBT 文件目录导入文档。"""
         try:
             ebts = import_ebt(dir_path)
-            config = build_cfg(*ebts)
+            config = build_cfg(import_ebt(dir_path))
             cfg = GenConfig(config)
             init(config)
             # 复制文件到对应目录并生成下载缓存
