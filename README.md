@@ -83,8 +83,9 @@ python3 main.py
 | `pdf_scale`            | 转换为 PDF 的缩放大小                                             | Scale of PDF  converting.                                                     |
 
 ### 注意事项 / Attention
-- 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致的转换问题
-- 使用 `swf2svg` 选项，也许会解决部分文档的字体形状问题（不能解决字体不全的问题，原始文件为了压缩大小，减去了未使用的字）
+- 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致转换出来的文档页面变小的问题
+- 使用 `pdf_scale` 选项，例如修改为 `0.5`（建议不要小于这个值，第三方软件可能无法自动处理过小的缩放），可以减小文档文件大小并加快转换速度，但是转换出来的文档也会相应缩小
+- 使用 `swf2svg` 选项，也许会解决部分文档的字体问题或形状问题
 - 使用 `swf2svg` 选项，而不使用 `svgfontface` 选项，由于省去了文本转换过程，可以大大加快转换速度
 - 若启用 `svgfontface` 选项，由于 [typst/svg2pdf](https://github.com/typst/svg2pdf) 的缺陷，将无法转换字体，会自动替换为默认字体
 - 若启用 `svgfontface` 选项，由于 [ffdec](https://github.com/jindrapetrik/jpexs-decompiler) 的缺陷，某些形状或文本会出现转换错误
