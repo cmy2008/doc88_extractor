@@ -21,7 +21,7 @@ A tool to extract and convert doc88 documents (non-screenshot).
 安装依赖：
 
 ```bash
-pip3 install retrying requests curl_cffi
+pip3 install retrying requests curl_cffi xmltodict
 ```
 
 ### Java
