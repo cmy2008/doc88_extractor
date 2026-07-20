@@ -194,44 +194,7 @@ class Update:
     # ------------------------------------------------------------------
 
     def ffdec_configure(self) -> bool:
-        """配置 ffdec 的临时目录和 font-face 导出选项。"""
-        # 配置临时目录
-        if self.cfg2.replace_jna_tmp_path:
-            jna_path = os.path.abspath(ospath("ffdec/jna_temp/"))
-            if not os.path.exists(ospath("ffdec/jna_temp/")):
-                try:
-                    os.makedirs(ospath("ffdec/jna_temp/"))
-                except FileNotFoundError:
-                    print(
-                        "Error when creating temporary folder for ffdec, "
-                        "maybe permission denied?"
-                    )
-            try:
-                subprocess.run(
-                    [
-                        "java", "-jar", "ffdec/ffdec.jar",
-                        "-config", f"jnaTempDirectory={jna_path}",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-            except Exception as err:
-                logw(str(err))
-                return False
-        else:
-            try:
-                subprocess.run(
-                    [
-                        "java", "-jar", "ffdec/ffdec.jar",
-                        "-config", 'jnaTempDirectory=""',
-                    ],
-                    capture_output=True,
-                    text=True,
-                )
-            except Exception as err:
-                logw(str(err))
-
+        """配置 ffdec 的 font-face 导出选项。"""
         # 配置 font-face
         font_face_value = (
             "true" if self.cfg2.svgfontface else "false"

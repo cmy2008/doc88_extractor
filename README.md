@@ -78,7 +78,6 @@ python3 main.py
 | `clean`                | 是否保留中间文件                                                  | Keep intermediate files.                                                      |
 | `get_more`             | 是否始终通过扫描获取页面                                          | Always via scanning to get pages.                                             |
 | `path_replace`         | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
-| `replace_jna_tmp_path` | 是否替换 ffdec 的临时目录                                         | Replace ffdec temp directory.                                                 |
 | `download_workers`     | 下载文件的线程数                                                  | Number of threads for downloading files.                                      |
 | `convert_workers`      | 转换文件的线程数                                                  | Number of threads for converting files.                                       |
 | `pdf_scale`            | 转换为 PDF 的缩放大小                                             | Scale of PDF  converting.                                                     |

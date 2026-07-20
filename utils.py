@@ -99,7 +99,7 @@ def get_request(
         headers.pop("Content-Type", None)
     if cffi:
         return requests_cffi.get(
-            url, headers=headers, impersonate="edge101", stream=stream, timeout=timeout
+            url, headers=headers, impersonate="chrome", stream=stream, timeout=timeout
         )
     return requests.get(url, headers=headers, stream=stream, timeout=timeout)
 

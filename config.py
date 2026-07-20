@@ -27,7 +27,6 @@ class Config:
             "ffdec_repo": "cmy2008/jpexs-decompiler",
             "svg2pdf_repo": "cmy2008/svg2pdf",
             "presse_repo" : "cmy2008/presse",
-            "replace_jna_tmp_path": True,
             "check_update": True,
             "swf2svg": False,
             "svgfontface": False,
