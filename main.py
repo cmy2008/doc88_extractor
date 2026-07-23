@@ -511,7 +511,7 @@ class Converter:
         """合并所有单页 PDF 为最终文档。"""
         run = subprocess.run(
             [
-                "presse",
+                "./presse",
                 "merge",
                 f"{self.cfg2.pdf_path}*.pdf",
                 "--optimize",
