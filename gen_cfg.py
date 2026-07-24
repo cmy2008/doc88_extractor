@@ -33,6 +33,7 @@ class GenConfig:
         self.p_pagecount: str = config["p_pagecount"]
 
         self.pageids: list[str] = decode(self.page_info).split(",")
+        self.pageids.sort(key=lambda pid: int(pid.split("-")[3]))
         self.p_count: int = len(self.pageids)
         self.headnums: list[str] = self.header_info.replace('"', "").split(",")
 
