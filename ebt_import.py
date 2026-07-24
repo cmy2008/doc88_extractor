@@ -117,8 +117,8 @@ def build_cfg(
     if not ph_list:
         raise Exception("缺少ph文件")
 
-    pk_list.sort(key=lambda x: x["page"])
-    ph_list.sort(key=lambda x: x["level"])
+    pk_list.sort(key=lambda x: int(x["page"]))
+    ph_list.sort(key=lambda x: int(x["level"]))
 
     cfg = {
         "headerInfo": ",".join(f'"{item["chunk_size"]}"' for item in ph_list),
