@@ -95,7 +95,7 @@ def import_xml(xml: str):
         )
     return ph_list, pk_list, p_name, ebt_host
 
-
+# TODO: 直接构造 GenConfig
 def build_cfg(
     ph_list: list[dict],
     pk_list: list[dict],

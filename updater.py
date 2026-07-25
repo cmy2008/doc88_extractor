@@ -194,8 +194,7 @@ class Update:
     # ------------------------------------------------------------------
 
     def ffdec_configure(self) -> bool:
-        """配置 ffdec 的 font-face 导出选项。"""
-        # 配置 font-face
+        """配置 ffdec 的导出选项。"""
         font_face_value = (
             "true" if self.cfg2.svgfontface else "false"
         )
@@ -204,7 +203,7 @@ class Update:
                 [
                     "java", "-jar", "ffdec/ffdec.jar",
                     "-config",
-                    f"textExportExportFontFace={font_face_value}",
+                    f"textExportExportFontFace={font_face_value},useMinimumStrokeWidth1Px=false",
                 ],
                 capture_output=True,
                 text=True,
@@ -213,7 +212,6 @@ class Update:
         except Exception as err:
             logw(str(err))
             return False
-
         return True
 
     # ------------------------------------------------------------------
@@ -406,15 +404,32 @@ class Update:
         return self._download_tool(tool_name)
 
     def check_required_tool(self, tool_name: str) -> bool:
-        """检查必需工具，缺失则自动下载，下载失败返回 False。"""
+        """检查必需工具，缺失则自动下载，下载失败或无法运行返回 False。"""
+        def error_message(tool_name: str, msg) -> None:
+            print(f"{tool_name} 无法运行：{msg}")
+            print(f"请尝试：\n1. 删除 {self._tool_binary_name(tool_name)} 并重新运行程序\n2. 手动编译安装 {tool_name}：https://github.com/cmy2008/{tool_name}")
         binary = self._tool_binary_name(tool_name)
-        if os.path.isfile(binary):
-            return True
+        try:
+            run=subprocess.run(
+                [binary, "--version"],
+                capture_output=True,
+                text=True,
+            )
+            if run.returncode == 0:
+                return True
+            else:
+                error_message(tool_name, run.stderr.strip())
+                return False
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            error_message(tool_name, e)
+            return False
         print(f"检测到必要工具 {tool_name} 未安装，正在自动下载...")
         if not self._download_tool(tool_name):
             print(f"自动下载 {tool_name} 失败，请检查网络连接后重试")
             return False
-        return True
+        return self.check_required_tool(tool_name)
 
     # ------------------------------------------------------------------
     # 统一的启动工具链检查入口

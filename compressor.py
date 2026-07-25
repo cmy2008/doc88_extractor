@@ -19,7 +19,8 @@ class Compressor:
         pk = self._decompress_ebt_pk(load_file(file_ebt_pk))
         swf = self._makeup(ph, pk)
         # 设置帧数量为 1
-        swf[19] = 1
+        swf[19] = 1 # 也许位置会变动？
+        # TODO: 设置正确的长宽
         # 释放中间缓冲区，减少内存峰值
         del ph, pk
         write_file(swf, path)
