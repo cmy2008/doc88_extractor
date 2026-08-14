@@ -194,7 +194,7 @@ class Update:
     # ------------------------------------------------------------------
 
     def ffdec_configure(self) -> bool:
-        """配置 ffdec 的导出选项。"""
+        """配置 ffdec 的导出选项以及临时目录。"""
         font_face_value = (
             "true" if self.cfg2.svgfontface else "false"
         )
@@ -203,7 +203,7 @@ class Update:
                 [
                     "java", "-jar", "ffdec/ffdec.jar",
                     "-config",
-                    f"textExportExportFontFace={font_face_value},useMinimumStrokeWidth1Px=false",
+                    f"textExportExportFontFace={font_face_value},useMinimumStrokeWidth1Px=false,jnaTempDirectory=",
                 ],
                 capture_output=True,
                 text=True,
