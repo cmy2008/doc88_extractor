@@ -241,10 +241,9 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
     try:
         if not more:
             get_swf(cfg)
-        if not _DEBUG:
-            gc.collect()
-            convert(cfg)
-            del cfg
+        gc.collect()
+        convert(cfg)
+        del cfg
         return True
     except Exception as err:
         print(err)
@@ -469,6 +468,7 @@ class Converter:
                 ],
                 capture_output=True,
                 text=True,
+                errors="replace",
             )
             log = run.stdout
             if run.returncode != 0:
@@ -498,31 +498,37 @@ class Converter:
                     f"{self.cfg2.svg_path}{i}.svg",
                     f"{self.cfg2.pdf_path}{i}.pdf",
                 ],
-                text=True,
                 capture_output=True,
+                check=True,
+                text=True,
+                errors="replace",
             )
-        except FileNotFoundError as e:
-            print("Can't convert this page! Skipping...")
-            logw(f"SVG to PDF converting error: {e}")
+        except subprocess.CalledProcessError as run:
+            logw("SVG to PDF converting error: " + (run.stderr or run.stdout))
+            raise Exception("SVG to PDF converting error! Please check logs.")
 
     # -- 合并 PDF --
 
     def makepdf(self, path: str) -> None:
         """合并所有单页 PDF 为最终文档。"""
-        run = subprocess.run(
-            [
-                "./presse",
-                "merge",
-                f"{self.cfg2.pdf_path}*.pdf",
-                "--optimize",
-                "-o",
-                path
-            ],
-            capture_output=True,
-            text=True
-        )
-        if run.returncode != 0:
+        try:
+            run = subprocess.run(
+                [
+                    "./presse",
+                    "merge",
+                    f"{self.cfg2.pdf_path}*.pdf",
+                    "--optimize",
+                    "-o",
+                    path
+                ],
+                capture_output=True,
+                check=True,
+                text=True,
+                errors="replace",
+            )
+        except subprocess.CalledProcessError as run:
             logw("PDF merging error: " + (run.stderr or run.stdout))
+            raise Exception("PDF merging error! Please check logs.")
 
 
 def _safe_rmtree(path: str) -> None:
