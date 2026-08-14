@@ -255,11 +255,19 @@ class Update:
                 and os.path.isfile("ffdec/ffdec.jar")
             ):
                 return False
-            if not self.ffdec_update() and not os.path.isfile("ffdec/ffdec.jar"):
-                exit()
-            self.cfg2.ffdec_version = rel.latest_version
-            self.cfg2.save()
-            return True
+            try:
+                self.ffdec_update()
+                if not os.path.isfile("ffdec/ffdec.jar"):
+                    raise Exception("ffdec.jar not found after update!")
+                self.cfg2.ffdec_version = rel.latest_version
+                self.cfg2.save()
+                return True
+            except Exception as e:
+                print(f"更新 ffdec 时出错: {e.__class__.__name__}: {e}")
+                if not os.path.isfile("ffdec/ffdec.jar"):
+                    input_break()
+                    exit()
+                return False
         except Exception as e:
             print(f"检测 ffdec 更新时出错: {e.__class__.__name__}: {e}")
             if not os.path.isfile("ffdec/ffdec.jar"):
