@@ -24,6 +24,7 @@ import time  # noqa: E402
 from concurrent.futures import ThreadPoolExecutor  # noqa: E402
 from coder import decode, encode, key2  # noqa: E402
 from compressor import make_swf  # noqa: E402
+from swf_resize import swf_resize  # noqa: E402
 from config import Config, cfg2  # noqa: E402
 from ebt_import import build_cfg, import_ebt, import_xml  # noqa: E402
 from gen_cfg import GenConfig  # noqa: E402
@@ -368,20 +369,10 @@ class Converter:
 
     # -- SWF 帧画布修正 --
 
-    def fix_displayrect(self, i: int, w: str, h: str) -> None:
-        """修正 SWF 帧的 displayRect 宽高。"""
-        subprocess.run(
-            [
-                "java", "-jar", "ffdec/ffdec.jar",
-                "-header",
-                "-set", "width", f"{w}px",
-                "-set", "height", f"{h}px",
-                f"{self.cfg2.swf_path}{i}.swf",
-                f"{self.cfg2.swf_path}{i}.swf",
-            ],
-            capture_output=True,
-            text=True,
-        )
+    def fix_swf(self, i: int, w: str, h: str) -> None:
+        """修正 SWF 帧的宽高及数量。"""
+        path = f"{self.cfg2.swf_path}{i}.swf"
+        swf_resize(path, path, width=int(w), height=int(h), framecount=1)
 
     # -- SWF 分组 --
 
@@ -562,14 +553,13 @@ def convert(cfg: GenConfig) -> None:
     max_workers = cfg2.convert_workers
     doc = Converter(cfg2)
 
-    # 修正 SWF 帧画布大小
-    if cfg2.fix_displayrect:
-        print("Now start fixing swf displayrect, please wait...")
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for i in range(1, cfg.p_count + 1):
-                parts = cfg.pageids[i - 1].split("-")
-                executor.submit(doc.fix_displayrect, i, parts[1], parts[2])
-        gc.collect()
+    # 修正 SWF 帧画布大小及数量
+    print("Now start fixing swf, please wait...")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(1, cfg.p_count + 1):
+            parts = cfg.pageids[i - 1].split("-")
+            executor.submit(doc.fix_swf, i, parts[1], parts[2])
+    gc.collect()
 
     doc.divide_swfs(cfg2.convert_workers)
     gc.collect()

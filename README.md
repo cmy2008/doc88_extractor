@@ -74,7 +74,6 @@ python3 main.py
 | `check_update`         | 是否在启动时检查更新                                              | Always check updates on startup.                                              |
 | `swf2svg`              | 是否先转换到 SVG 再转到 PDF                                       | Convert swf files to svg first.                                               |
 | `svgfontface`          | （仅 swf2pdf 为 false 时有效）在 SVG 转换中是否转换字体来呈现文本 | Only works when swf2pdf is false; using font to show texts in SVG converting. |
-| `fix_displayrect`      | 是否修正 SWF 的画布大小                                           | Fix the swf files displayrect sizes                                           |
 | `clean`                | 是否保留中间文件                                                  | Keep intermediate files.                                                      |
 | `get_more`             | 是否始终通过扫描获取页面                                          | Always via scanning to get pages.                                             |
 | `path_replace`         | 是否在 Windows 下替换过长路径                                     | Replace long paths on Windows.                                                |
@@ -84,7 +83,6 @@ python3 main.py
 
 ### 注意事项 / Attention
 - 使用`proxy_url`选项，可解决国内无法正常下载文件的问题，内容应为 Github 的加速代理服务的 URL 前缀（一般以 https://aaa.bbb.ccc/ 为标准格式，注意不要漏最后的`/`）
-- 使用 `fix_displayrect` 选项，可以修复某些少数文档的长宽不一致导致转换出来的文档页面变小的问题
 - 使用 `pdf_scale` 选项，例如修改为 `0.5`（建议不要小于这个值，第三方软件可能无法自动处理过小的缩放），可以减小文档文件大小并加快转换速度，但是转换出来的文档也会相应缩小
 - 使用 `swf2svg` 选项，也许会解决部分文档的字体问题或形状问题
 - 使用 `swf2svg` 选项，而不使用 `svgfontface` 选项，由于省去了文本转换过程，可以大大加快转换速度

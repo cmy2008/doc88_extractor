@@ -30,7 +30,6 @@ class Config:
             "check_update": True,
             "swf2svg": False,
             "svgfontface": False,
-            "fix_displayrect": False,
             "clean": True,
             "get_more": False,
             "path_replace": True,
