@@ -142,6 +142,7 @@ class GetMore:
                                 print(f"found:{br}")
                                 self.ids.append(br)
                                 page_start = pos - 33
+                                status = False
                             else:
                                 print(f"zpass:{br}")
                                 status = False
