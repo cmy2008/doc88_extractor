@@ -50,6 +50,7 @@ _DEBUG = False
 _DOC88_DOMAIN = "doc88.com"
 _CDN_DOMAIN = "doc88.piglin.eu.org"
 _API_DOCINFO = "doc.php?act=info&p_code="
+_RESIZE_SWF = True
 
 # ---------------------------------------------------------------------------
 # 数据解码
@@ -163,6 +164,7 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
     Returns:
         提取是否成功。
     """
+    global _RESIZE_SWF
 
     cfg = GenConfig(config)
     if os.path.exists(ospath(f"{cfg2.o_dir_path}{config['p_code']}/index.json")):
@@ -234,6 +236,7 @@ def main(config: dict, more: bool = False, initial: bool = True) -> bool:
             print(f"成功扫描页数：{cfg.p_count}")
             del newpageids
             gc.collect()
+            _RESIZE_SWF = False
             time.sleep(2)
         else:
             print("普通下载模式...")
@@ -372,7 +375,10 @@ class Converter:
     def fix_swf(self, i: int, w: str, h: str) -> None:
         """修正 SWF 帧的宽高及数量。"""
         path = f"{self.cfg2.swf_path}{i}.swf"
-        swf_resize(path, path, width=int(w), height=int(h), framecount=1)
+        if _RESIZE_SWF:
+            swf_resize(path, path, width=int(w), height=int(h), framecount=1)
+        else:
+            swf_resize(path, path, framecount=1)
 
     # -- SWF 分组 --
 
@@ -676,9 +682,11 @@ class Mode:
     @staticmethod
     def _from_dirs(dir_path: str) -> bool:
         """从本地 EBT 文件目录导入文档。"""
+        global _RESIZE_SWF
         try:
+            _RESIZE_SWF = False
             ebts = import_ebt(dir_path)
-            config = build_cfg(import_ebt(dir_path))
+            config = build_cfg(ebts[0], ebts[1])
             cfg = GenConfig(config)
             init(config)
             # 复制文件到对应目录并生成下载缓存
@@ -737,6 +745,7 @@ if __name__ == "__main__":
 
     user = Mode()
     while True:
+        _RESIZE_SWF = True
         if user.cli():
             if cfg2.clean:
                 try:
