@@ -29,6 +29,14 @@ pip3 install retrying requests curl_cffi xmltodict
 - 需要安装 Java 才能进行文档转换（推荐 Java 17）:  
     Requires Java (recommended: version 17):  
     [Microsoft Build of OpenJDK 17 for Windows x64](https://aka.ms/download-jdk/microsoft-jdk-17.0.14-windows-x64.msi)
+### PDF 合并 / PDF merging
+- 程序将自动下载 presse 以实现 PDF 文件的合并和大小优化。可尝试从 [cmy2008/presse](https://github.com/cmy2008/presse) 编译。  
+    The tool will download presse automatically to perform PDF merging and size optimization. if installation fails, try building it from [cmy2008/presse](https://github.com/cmy2008/presse)
+- 原项目：  
+    Original project:  
+    [SimonBure/presse](https://github.com/SimonBure/presse)
+- 支持平台 / support platform:  
+    Windows (x86_64) / Linux (x86_64/arm64) / MacOS (x86_64/arm64) / Android (arm64)
 
 ### SVG 转换 / SVG Converting
 - 若启用 swf2svg，程序将自动下载 swf2svg 以实现 SVG 到 PDF 的转换。若安装失败，可尝试从 [typst/svg2pdf](https://github.com/typst/svg2pdf) 编译。  
