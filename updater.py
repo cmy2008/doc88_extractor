@@ -64,8 +64,9 @@ class Update:
 
         return rel, None
 
-    def download_ffdec(self) -> bool:
-        """下载并解压 ffdec 工具。"""
+
+    def ffdec_update(self) -> bool:
+        """更新/重新下载 ffdec（保留或删除旧版本）。"""
         try:
             rel, asset_name = self.get_ffdec_asset()
         except Exception as e:
@@ -95,7 +96,7 @@ class Update:
                 return False
 
         try:
-            download(ffdec_url, "ffdec/ffdec.zip")
+            download(ffdec_url, "ffdec.zip")
         except Exception:
             print(
                 "下载出错! 请检查网络连接或修改配置中的 'proxy_url' 内容。"
@@ -105,20 +106,6 @@ class Update:
             return False
 
         print("下载完成! 开始解压...")
-        try:
-            extract("ffdec/ffdec.zip", "ffdec/")
-            os.remove("ffdec/ffdec.zip")
-            print("解压完成!")
-            return True
-        except zipfile.BadZipFile:
-            print(
-                "解压失败! 链接可能已失效? 请尝试修改配置文件中 'ffdec_repo' 的内容。"
-            )
-            input_break()
-            return False
-
-    def ffdec_update(self) -> bool:
-        """更新/重新下载 ffdec（保留或删除旧版本）。"""
         if os.path.isfile("ffdec/ffdec.jar"):
             if choose(
                 "是否删除旧版本ffdec，否则创建备份？ (Y: 删除, N: 备份): "
@@ -139,7 +126,17 @@ class Update:
                     shutil.move("ffdec", f"ffdec_{name}")
                 except Exception as e:
                     print(f"Error occurred while updating old version: {e}")
-        return self.download_ffdec()
+        try:
+            extract("ffdec.zip", "ffdec/")
+            os.remove("ffdec.zip")
+            print("解压完成!")
+            return True
+        except zipfile.BadZipFile:
+            print(
+                "解压失败! 链接可能已失效? 请尝试修改配置文件中 'ffdec_repo' 的内容。"
+            )
+            input_break()
+            return False
 
     # ------------------------------------------------------------------
     # Java 环境
