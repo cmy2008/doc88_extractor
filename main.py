@@ -680,7 +680,10 @@ class Mode:
 
         # 尝试作为 m_main 数据解码
         try:
-            config = decode_data(user_input)
+            config = json.loads(decode(user_input))
+            if config.get("headerInfo") is None:
+                print("无效 m_main 数据！可能需要进行人机验证！")
+                return False
             main(config, cfg2.get_more)
             return True
         except Exception:
