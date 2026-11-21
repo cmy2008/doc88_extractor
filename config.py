@@ -17,14 +17,14 @@ class Config:
 
     def __init__(self, config_path: str = "config.json") -> None:
         self.default_config: dict[str, Any] = {
-            "version": "2.3",
-            "ffdec_version": "version26.3.0",
+            "version": "2.4",
+            "ffdec_version": "version26.5.0",
             "o_dir_path": "docs/",
             "o_swf_path": "swf/",
             "o_pdf_path": "pdf/",
             "o_svg_path": "svg/",
             "proxy_url": "",
-            "ffdec_repo": "cmy2008/jpexs-decompiler",
+            "ffdec_repo": "jindrapetrik/jpexs-decompiler",
             "svg2pdf_repo": "cmy2008/svg2pdf",
             "presse_repo" : "cmy2008/presse",
             "check_update": True,

@@ -1,3 +1,7 @@
+# **重要提示：**
+目前网站已添加人机验证（无论网络环境），无法直接通过脚本获取，建议在通过人机验证后**刷新网页**再手动获取 m_main 数据粘贴进行使用，也可通过（粘贴网址后提示）输入已验证过的 Cookie 中的 `JSESSIONID` 和 `cdb_sys_sid` 值临时获取文档（大约十分钟有效期）  
+后续更新会添加人机验证绕过机制和登录功能
+
 ## 简介 / Introduction
 
 一个可以完整提取道客巴巴预览文档（非截图）的工具。  
@@ -46,6 +50,7 @@ pip3 install retrying requests curl_cffi xmltodict
     Windows (x86_64) / Linux (x86_64/arm64) / MacOS (x86_64/arm64) / Android (arm64)
 
 ## 如何使用 / How to Use
+
 
 在程序目录下运行：
 

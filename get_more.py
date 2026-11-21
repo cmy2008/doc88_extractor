@@ -8,9 +8,8 @@ import gc
 import json
 import struct
 import requests
-from coder import encode, key2
 from compressor import Compressor
-from gen_cfg import GenConfig
+from gen_cfg import GenConfig, pk_cache_name
 from utils import ospath, read_file, write_file, writes_file, get_request
 
 
@@ -65,14 +64,8 @@ class GetMore:
         page_num = 0
         while True:
             page_num += 1
-            url = (
-                self.cfg.ebt_host
-                + "/getebt-"
-                + encode(
-                    f"{self.level}-{offset}-{self.chunk_size}-{self.cfg.p_swf}-{page_num}-{self.cfg.p_code}",
-                    key2,
-                )
-                + ".ebt"
+            url = self.cfg.scan_url(
+                self.level, offset, self.chunk_size, page_num
             )
             try:
                 response = get_request(url, cffi=False, content_type="", stream=True)
@@ -130,15 +123,12 @@ class GetMore:
                             br = f"{headsize + page_start}-{page_size}"
                             page_data = self.PK_data[page_start:pos + 1]
                             if self._test_bytearray(page_data):
+                                page = self.pagecount + len(self.ids) + 1
                                 write_file(
                                     page_data,
-                                    f"{self.filepath}getebt-"
-                                    f"{encode(f'{self.level}-{headsize + page_start}-{page_size}-{self.cfg.p_swf}-{self.pagecount + len(self.ids) + 1}-{self.cfg.p_code}', key2)}.ebt",
+                                    f"{self.filepath}{pk_cache_name(page)}",
                                 )
-                                self.save_progress(
-                                    "pk",
-                                    self.pagecount + len(self.ids) + 1,
-                                )
+                                self.save_progress("pk", page)
                                 print(f"found:{br}")
                                 self.ids.append(br)
                                 page_start = pos - 33
@@ -156,12 +146,12 @@ class GetMore:
         remaining_data = self.PK_data[page_start:]
         if remaining_data and self._test_bytearray(remaining_data):
             br = f"{headsize + page_start}-{len(remaining_data)}"
+            page = self.pagecount + len(self.ids) + 1
             write_file(
                 remaining_data,
-                f"{self.filepath}getebt-"
-                f"{encode(f'{self.level}-{headsize + page_start}-{len(remaining_data)}-{self.cfg.p_swf}-{self.pagecount + len(self.ids) + 1}-{self.cfg.p_code}', key2)}.ebt",
+                f"{self.filepath}{pk_cache_name(page)}",
             )
-            self.save_progress("pk", self.pagecount + len(self.ids) + 1)
+            self.save_progress("pk", page)
             self.ids.append(br)
             print(f"finish:{br}")
         else:

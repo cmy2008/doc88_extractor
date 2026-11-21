@@ -27,7 +27,7 @@ from compressor import make_swf  # noqa: E402
 from swf_resize import swf_resize  # noqa: E402
 from config import Config, cfg2  # noqa: E402
 from ebt_import import build_cfg, import_ebt, import_xml  # noqa: E402
-from gen_cfg import GenConfig  # noqa: E402
+from gen_cfg import GenConfig, ph_cache_name, pk_cache_name  # noqa: E402
 from get_more import GetMore  # noqa: E402
 from updater import Update  # noqa: E402
 from xml.parsers.expat import ExpatError
@@ -52,25 +52,12 @@ _CDN_DOMAIN = "doc88.piglin.eu.org"
 _API_DOCINFO = "doc.php?act=info&p_code="
 _RESIZE_SWF = True
 
-# ---------------------------------------------------------------------------
-# 数据解码
-# ---------------------------------------------------------------------------
-
-def decode_data(encode_data: str) -> dict:
-    """解码 m_main.init 中的加密数据为配置字典。"""
-    try:
-        return json.loads(decode(encode_data))
-    except json.decoder.JSONDecodeError:
-        raise Exception("Can't read data!")
-    except (ValueError, UnicodeDecodeError):
-        raise Exception("Can't read data! Maybe keys were changed?")
-
 
 # ---------------------------------------------------------------------------
 # URL 解析
 # ---------------------------------------------------------------------------
 
-def get_main_from_url(url: str, way: int = 1) -> dict | bool:
+def get_main_from_url(url: str, way: int = 2) -> dict | bool:
     """从 doc88 页面 URL 提取文档配置数据。
 
     Returns:
@@ -78,41 +65,69 @@ def get_main_from_url(url: str, way: int = 1) -> dict | bool:
     """
     if url.find(f"{_DOC88_DOMAIN}/p-") == -1 and url.find(f"_CDN_DOMAIN/p-") == -1:
         raise Exception("Invalid URL!")
+    # 加载 cookie.json
+    cookie: dict = {}
+    try:
+        cookie = json.loads(read_file("cookie.json"))
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        pass
     # 方法 1
     if way == 1:
         try:
             p_code = url.split("/p-")[1].split(".html")[0]
             if p_code.isdigit():
-                return get_main_from_xml(p_code)
+                return get_main_from_xml(p_code, cookie)
             else:
                 return get_main_from_url(url,2)
-        except (KeyError, TypeError, ExpatError):
-            print("方法 1 获取失败，切换至方法 2...",e)
+        except (KeyError, TypeError, ExpatError, Exception) as e:
+            print("方法 1 获取失败，切换至方法 2...", e)
             return get_main_from_url(url,2)
     # 方法 2
     elif way == 2:
-        reponse = get_request(url, referer=True, cffi=True)
+        reponse = get_request(url, referer=True, cffi=True, cookie=cookie)
         if reponse.status_code == 404:
             raise Exception("404 Not found!")
         content = reponse.text
-        data = re.search(r'm_main\.init\(".*"\);', content)
-        if data is None:
-            if re.search("网络环境安全验证", content):
-                print("WAF detected!")
-                # 使用第二种
+        if re.search("网络环境安全验证", content):
+            print("WAF detected!")
+            if choose("Do you want to use CDN?(Y/n): "):
+                url = f"https://{_CDN_DOMAIN}{url.split(_DOC88_DOMAIN)[1]}"
+                return get_main_from_url(url, 2)
+            return False
+        encode_data = re.findall(r'm_main\.init\(\s*"((?:[^"\\]|\\.)*)"\s*\)', content)[0]
+        try:
+            result = json.loads(decode(encode_data))
+        except json.decoder.JSONDecodeError:
+            raise Exception("Can't read data!")
+        except (ValueError, UnicodeDecodeError):
+            raise Exception("Can't read data! Maybe keys were changed?")
+        if result.get("headerInfo") is None:
+            print("检测到人机验证，请选择进行如下操作：\n1. 在浏览器中完成验证并*刷新*，再获取 m_main.init 数据，粘贴到本程序中\n2. 在浏览器中完成验证，打开网络控制台，转到应用程序（Application）选项卡，转到Cookie-stat.doc88.com，选择并复制粘贴相关 Cookie 以继续获取")
+            if choose("是否使用 Cookie 继续获取？ (Y/n): "):
+                cookie["cdb_sys_sid"] = input("请输入 cdb_sys_sid 值: ")
+                if cookie.get("cdb_sys_sid") is None:
+                    print("cdb_sys_sid 不能为空！")
+                    return False
+                #值应为小写字母和数字组合
+                elif not re.match(r'^[a-z0-9]+$', cookie["cdb_sys_sid"]):
+                    print("cdb_sys_sid 格式不正确！")
+                    return False
+                cookie["JSESSIONID"] = input("请输入 JSESSIONID 值: ")
+                if cookie.get("JSESSIONID") is None:
+                    print("JSESSIONID 不能为空！")
+                    return False
+                # 大写字母和数字组合
+                elif not re.match(r'^[A-Z0-9]+$', cookie["JSESSIONID"]):
+                    print("JSESSIONID 格式不正确！")
+                    return False
+                writes_file(json.dumps(cookie), "cookie.json")
+                return get_main_from_url(url, 2)
+        return result
 
-                if choose("Do you want to use CDN?(Y/n): "):
-                    url = f"https://{_CDN_DOMAIN}{url.split(_DOC88_DOMAIN)[1]}"
-                    return get_main_from_url(url)
-                return False
-            raise Exception("Can't find data in this page! Please try another.")
-        c = data.span()
-        encode_data = content[c[0] + 13 : c[1] - 3]
-        return decode_data(encode_data)
-
-def get_main_from_xml(p_code: str):
+def get_main_from_xml(p_code: str, cookie: dict = None) -> dict:
+    """从 doc88 XML 接口获取文档配置数据。"""
     url = f"https://www.{_DOC88_DOMAIN}/{_API_DOCINFO}{p_code}"
-    reponse = get_request(url, referer=True, cffi=True)
+    reponse = get_request(url, referer=True, cffi=True, cookie=cookie)
     if not reponse.text:
         raise KeyError
     xml = decode(reponse.text, key2)
@@ -272,9 +287,20 @@ class Downloader:
 
     def _read_progress(self) -> None:
         try:
-            self.progress = json.loads(read_file(self.progressfile))
+            progress = json.loads(read_file(self.progressfile))
         except json.decoder.JSONDecodeError:
-            self.progress = {"pk": [], "ph": []}
+            progress = {}
+        # 仅信任确实存在对应缓存文件的进度条目，兼容旧命名缓存
+        self.progress = {
+            "ph": [
+                level for level in progress.get("ph", [])
+                if os.path.isfile(ospath(cfg2.dir_path + ph_cache_name(level)))
+            ],
+            "pk": [
+                page for page in progress.get("pk", [])
+                if os.path.isfile(ospath(cfg2.dir_path + pk_cache_name(page)))
+            ],
+        }
 
     def save_progress(self, ptype: str, page: int) -> None:
         self.progress[ptype].append(page)
@@ -689,14 +715,16 @@ class Mode:
             config = build_cfg(ebts[0], ebts[1])
             cfg = GenConfig(config)
             init(config)
-            # 复制文件到对应目录并生成下载缓存
+            # 复制文件到对应目录并生成下载缓存（统一使用短命名）
             progress = Downloader(cfg)
             for ph in ebts[0]:
-                shutil.copy(ospath(ph["path"]), ospath(cfg2.dir_path))
-                progress.save_progress("ph", ph["level"])
+                dst = cfg2.dir_path + ph_cache_name(int(ph["level"]))
+                shutil.copy(ospath(ph["path"]), ospath(dst))
+                progress.save_progress("ph", int(ph["level"]))
             for pk in ebts[1]:
-                shutil.copy(ospath(pk["path"]), ospath(cfg2.dir_path))
-                progress.save_progress("pk", pk["page"])
+                dst = cfg2.dir_path + pk_cache_name(int(pk["page"]))
+                shutil.copy(ospath(pk["path"]), ospath(dst))
+                progress.save_progress("pk", int(pk["page"]))
             return main(config, cfg2.get_more, initial=False)
         except Exception as err:
             print(err)
@@ -735,6 +763,7 @@ if __name__ == "__main__":
         "(copy(match[1]), console.log('复制成功')) : "
         "console.log('未找到')"
     )
+    print("注意：若出现人机验证，验证成功后*刷新网页*再获取 m_main 数据")
     print(
         "输入示例：\n"
         "网址：https://www.doc88.com/p-12345678.html\n"

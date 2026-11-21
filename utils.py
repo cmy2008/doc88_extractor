@@ -18,14 +18,23 @@ from retrying import retry
 from config import cfg2
 
 
+import os
+from pathlib import Path
+from typing import Union
+
 def ospath(path: str) -> Union[str, Path]:
-    """处理 Windows 长路径（超过 260 字符时添加 \\\\?\\ 前缀）。"""
-    if os.name == "nt" and cfg2.path_replace:
-        fullpath = Path(path)
-        if len(str(fullpath.absolute())) >= 260:
-            return "\\\\?\\" + str(fullpath.absolute())
-        return fullpath
-    return path
+    """处理 Windows 长路径（超过 260 字符时添加 \\?\ 前缀）。"""
+    if os.name != "nt" or not cfg2.path_replace:
+        return path
+    abs_path = os.path.abspath(path)
+    abs_path = abs_path.replace("/", "\\")
+    if abs_path.startswith("\\\\?\\"):
+        return abs_path if len(abs_path) >= 260 else Path(abs_path)
+    if len(abs_path) >= 260:
+        if abs_path.startswith("\\\\"):
+            return "\\\\?\\UNC\\" + abs_path[2:]
+        return "\\\\?\\" + abs_path
+    return Path(abs_path)
 
 
 def special_path(path: str) -> str:
@@ -73,6 +82,7 @@ def get_request(
     content_type: str = "text/html; charset=utf-8",
     stream: bool = False,
     timeout: int = 30,
+    cookie: dict = None,
 ) -> requests.Response:
     """发送 GET 请求，可选用 curl_cffi 模拟浏览器指纹。
 
@@ -83,6 +93,7 @@ def get_request(
         content_type: Content-Type 头部的值。
         stream: 是否以流模式获取响应。
         timeout: 请求超时时间（秒）。
+        proxy: 可选代理设置，格式为字典，例如 {"http": "http://
     Returns:
         requests.Response 或 curl_cffi 的 Response。
     """
@@ -97,6 +108,8 @@ def get_request(
         headers.pop("Referer", None)
     if content_type == "":
         headers.pop("Content-Type", None)
+    if cookie is not None:
+        headers["Cookie"] = "; ".join(f"{k}={v}" for k, v in cookie.items())
     if cffi:
         return requests_cffi.get(
             url, headers=headers, impersonate="chrome", stream=stream, timeout=timeout

@@ -11,9 +11,24 @@ from coder import decode, encode, key2
 
 @dataclass
 class PageURL:
-    """页面文件的名称和下载 URL。"""
+    """页面文件的本地缓存名称和下载 URL。"""
     name: str
     url: str
+
+
+def ph_cache_name(level: int) -> str:
+    """返回 PH 缓存文件名（短名，避免长路径问题）。"""
+    return f"ph{level}.ebt"
+
+
+def pk_cache_name(page: int) -> str:
+    """返回 PK 缓存文件名（短名，避免长路径问题）。"""
+    return f"pk{page}.ebt"
+
+
+def ebt_name(payload: str) -> str:
+    """生成 CDN 使用的原始 EBT 文件名。"""
+    return "getebt-" + encode(payload, key2) + ".ebt"
 
 
 class GenConfig:
@@ -46,26 +61,28 @@ class GenConfig:
         return int(pageid[0])
 
     def ph(self, level: int) -> PageURL:
-        """生成指定层级的 PH 文件 URL。"""
-        name = (
-            "getebt-"
-            + encode(
-                f"{level}-0-{self.headnums[level - 1]}-{self.p_swf}", key2
-            )
-            + ".ebt"
+        """生成指定层级的 PH 缓存名和下载 URL。"""
+        payload = f"{level}-0-{self.headnums[level - 1]}-{self.p_swf}"
+        return PageURL(
+            name=ph_cache_name(level),
+            url=f"{self.ebt_host}/{ebt_name(payload)}",
         )
-        return PageURL(name=name, url=f"{self.ebt_host}/{name}")
 
     def pk(self, page: int) -> PageURL:
-        """生成指定页面的 PK 文件 URL。"""
+        """生成指定页面的 PK 缓存名和下载 URL。"""
         pageid = self.pageids[page - 1].split("-")
         level_num = int(pageid[0])
-        name = (
-            "getebt-"
-            + encode(
-                f"{level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}",
-                key2,
-            )
-            + ".ebt"
+        payload = (
+            f"{level_num}-{pageid[3]}-{pageid[4]}-{self.p_swf}-{page}-{self.p_code}"
         )
-        return PageURL(name=name, url=f"{self.ebt_host}/{name}")
+        return PageURL(
+            name=pk_cache_name(page),
+            url=f"{self.ebt_host}/{ebt_name(payload)}",
+        )
+
+    def scan_url(self, level: int, offset: int, chunk_size: int, page_num: int) -> str:
+        """生成扫描请求 URL（仅用于下载，不作为本地缓存文件名）。"""
+        payload = (
+            f"{level}-{offset}-{chunk_size}-{self.p_swf}-{page_num}-{self.p_code}"
+        )
+        return f"{self.ebt_host}/{ebt_name(payload)}"

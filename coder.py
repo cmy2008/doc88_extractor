@@ -5,6 +5,7 @@ import base64
 
 key1 = "PJLKMNOI3xyz021wvrpqstouHCFBDEGAnhikjlmgfZbacedYRXTSUVQW!56789+4"
 key2 = "PJKLMNOI3xyz012wvprqstuoHBCDEFGAnhijklmgfZabcdeYXRSTUVWQ!56789+4"
+key3 = "PKJLMNOI3zyx012wvprqstuoHBDCEFGAnhijklmgfZabcdeYXRSTUVWQ!56789+4"
 std_key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 

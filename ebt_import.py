@@ -4,9 +4,11 @@
 从本地 .ebt 文件目录或 xml 文件解析文档配置。
 """
 
+import json
 import os
 from xmltodict import parse
 from coder import decode, encode, key2
+from gen_cfg import GenConfig, ph_cache_name, pk_cache_name
 
 
 def import_ebt(path: str) -> tuple[list[dict], list[dict]]:
@@ -28,7 +30,25 @@ def import_ebt(path: str) -> tuple[list[dict], list[dict]]:
     pk_list: list[dict] = []
 
     if os.path.isdir(path):
-        for file in os.listdir(path):
+        files = os.listdir(path)
+        # 短命名缓存（ph1.ebt / pk1.ebt ...）不含元数据，需从 index.json 还原
+        short_names = [
+            f for f in files
+            if f.endswith(".ebt") and f[:-4][:2] in ("ph", "pk")
+            and f[:-4][2:].isdigit()
+        ]
+        if short_names:
+            index_path = os.path.join(path, "index.json")
+            if not os.path.isfile(index_path):
+                raise Exception("短命名缓存缺少 index.json，无法还原配置")
+            with open(index_path, encoding="utf-8") as f:
+                config = json.load(f)
+            ph_list, pk_list = _ebts_from_config(config)
+            ph_list = [p for p in ph_list if ph_cache_name(p["level"]) in files]
+            pk_list = [p for p in pk_list if pk_cache_name(p["page"]) in files]
+            return ph_list, pk_list
+
+        for file in files:
             if not file.endswith(".ebt"):
                 continue
             decode_name = decode(file[:-4][7:], key2)
@@ -58,6 +78,35 @@ def import_ebt(path: str) -> tuple[list[dict], list[dict]]:
                     }
                 )
 
+    return ph_list, pk_list
+
+
+def _ebts_from_config(config: dict) -> tuple[list[dict], list[dict]]:
+    """从文档配置还原 PH/PK 信息列表，供短命名缓存导入使用。"""
+    cfg = GenConfig(config)
+    ph_list = [
+        {
+            "level": level,
+            "chunk_size": cfg.headnums[level - 1],
+            "p_swf": cfg.p_swf,
+        }
+        for level in range(1, cfg.ph_nums() + 1)
+    ]
+    pk_list = []
+    for page, pageid in enumerate(cfg.pageids, 1):
+        parts = pageid.split("-")
+        pk_list.append(
+            {
+                "level": int(parts[0]),
+                "width": parts[1],
+                "height": parts[2],
+                "headsize": parts[3],
+                "chunk_size": parts[4],
+                "p_swf": cfg.p_swf,
+                "page": page,
+                "p_code": cfg.p_code,
+            }
+        )
     return ph_list, pk_list
 
 
@@ -120,6 +169,10 @@ def build_cfg(
     pk_list.sort(key=lambda x: int(x["page"]))
     ph_list.sort(key=lambda x: int(x["level"]))
 
+    def page_size(item: dict) -> str:
+        width, height = item.get("width"), item.get("height")
+        return f"{width}-{height}" if width and height else "612-858"
+
     cfg = {
         "headerInfo": ",".join(f'"{item["chunk_size"]}"' for item in ph_list),
         "p_swf": ph_list[0]["p_swf"],
@@ -127,8 +180,7 @@ def build_cfg(
         "p_code": pk_list[0]["p_code"],
         "pageInfo": encode(
             ",".join(
-                f"{item['level']}-"
-                + f"{item['width'] + '-' + item['height'] if item['width'] is not None and item['height'] is not None else '612-858'}"
+                f"{item['level']}-{page_size(item)}"
                 + f"-{item['headsize']}-{item['chunk_size']}"
                 for item in pk_list
             )
